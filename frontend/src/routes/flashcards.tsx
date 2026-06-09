@@ -17,8 +17,8 @@ import {
   Calendar,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { getDecksFn, getDeckWithCardsFn, getDueCardsFn, updateCardProgressFn } from "@/api/flashcards";
-import { logActivityFn } from "@/api/user";
+import { getDecks, getDeckWithCards, getDueCards, updateCardProgress } from "@/api/flashcards";
+import { api } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
 import type { FlashcardDeck, Flashcard } from "@/api/flashcards";
@@ -50,7 +50,7 @@ function Flashcards() {
   useEffect(() => {
     if (!authLoading && !user) { navigate({ to: "/login" as any }); return; }
     if (!authLoading) {
-      getDecksFn().then((d) => { setDecks(d); setLoading(false); });
+      getDecks().then((d) => { setDecks(d); setLoading(false); });
     }
   }, [user, authLoading]);
 
@@ -76,12 +76,11 @@ function Flashcards() {
     setElapsed(0);
 
     if (srsMode) {
-      // SRS mode: only load due cards
-      const data = await getDueCardsFn({ data: { deckId: deck.id } });
+      const data = await getDueCards(deck.id);
       setCards(data.cards);
       setMasteredCount(0);
     } else {
-      const data = await getDeckWithCardsFn({ data: { deckId: deck.id } });
+      const data = await getDeckWithCards(deck.id);
       setCards(data.cards);
       setMasteredCount(data.masteredCount);
     }
@@ -106,20 +105,18 @@ function Flashcards() {
   const handleAnswer = async (known: boolean, quality?: number) => {
     const card = cards[currentIndex];
     if (user) {
-      await updateCardProgressFn({ data: { flashcardId: card.id, known, quality: quality ?? (known ? 4 : 1) } });
+      await updateCardProgress(card.id, known, quality ?? (known ? 4 : 1));
     }
     setResults((r) => ({ known: r.known + (known ? 1 : 0), learning: r.learning + (!known ? 1 : 0) }));
     const next = currentIndex + 1;
     if (next >= cards.length) {
       setSessionDone(true);
       if (user) {
-        await logActivityFn({
-          data: {
-            activityType: "Flashcards",
-            title: `${selectedDeck?.subject}: ${selectedDeck?.name}`,
-            scoreText: `${results.known + (known ? 1 : 0)}/${cards.length}`,
-          },
-        });
+        await api.post('/api/examglow/bookmarks/', {
+          resourceType: "Flashcards",
+          title: `${selectedDeck?.subject}: ${selectedDeck?.name}`,
+          subject: selectedDeck?.subject,
+        }).catch(() => {});
       }
     } else {
       setCurrentIndex(next);

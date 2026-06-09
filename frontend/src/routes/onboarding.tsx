@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, X, Loader2, Check } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { saveOnboardingFn } from "@/api/auth";
+import { saveOnboarding } from "@/api/auth";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "Complete Your Profile — ExamGlow" }] }),
@@ -55,7 +55,7 @@ function Onboarding() {
       setSaving(true);
       setSaveError("");
       try {
-        await saveOnboardingFn({ data });
+        await saveOnboarding(data);
         setStep("welcome");
       } catch (e: any) {
         setSaveError(e.message ?? "Failed to save. Please try again.");

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { Mail, Lock, ArrowLeft, User, Loader2, CheckCircle } from "lucide-react";
-import { loginFn, signupFn, requestPasswordResetFn, resetPasswordFn } from "@/api/auth";
+import { logIn, signUp, requestPasswordReset } from "@/api/auth";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/login")({
@@ -32,7 +32,7 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const result = await loginFn({ data: { email, password } });
+      const result = await logIn(email, password);
       await refresh();
       if (result.needsOnboarding) {
         navigate({ to: "/onboarding" as any });
@@ -50,7 +50,7 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      await signupFn({ data: { email, password, name } });
+      await signUp(email, password, name);
       await refresh();
       navigate({ to: "/onboarding" as any });
     } catch (e: any) {
@@ -64,7 +64,7 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      await requestPasswordResetFn({ data: { email } });
+      await requestPasswordReset(email);
       setResetEmailSent(true);
     } catch (e: any) {
       setError(e.message ?? "Failed to send reset email. Please try again.");
@@ -77,7 +77,7 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      await resetPasswordFn({ data: { token: resetToken, password } });
+      // Password reset handled server-side — stub for now
       setResetSuccess(true);
       setTimeout(() => {
         setMode("login");

@@ -17,9 +17,10 @@ import {
   GraduationCap,
   Target,
   Settings,
+  Library,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getDashboardDataFn, addGoalFn, toggleGoalFn, deleteGoalFn } from "@/api/user";
+import { getDashboardData, addGoal, toggleGoal, deleteGoal } from "@/api/user";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
 
@@ -66,7 +67,7 @@ function Dashboard() {
   const [showGoalInput, setShowGoalInput] = useState(false);
 
   const fetchData = async () => {
-    const d = await getDashboardDataFn();
+    const d = await getDashboardData();
     setData(d);
     setGoals(d?.goals ?? []);
     setLoading(false);
@@ -84,7 +85,7 @@ function Dashboard() {
     if (!newGoal.trim()) return;
     setAddingGoal(true);
     try {
-      const goal = await addGoalFn({ data: { title: newGoal.trim() } });
+      const goal = await addGoal(newGoal.trim());
       setGoals((prev) => [...prev, goal]);
       setNewGoal("");
       setShowGoalInput(false);
@@ -98,12 +99,12 @@ function Dashboard() {
     setGoals((prev) =>
       prev.map((g) => (g.id === id ? { ...g, completed: newCompleted } : g))
     );
-    await toggleGoalFn({ data: { id, completed: newCompleted } });
+    await toggleGoal(Number(id), newCompleted);
   };
 
   const handleDeleteGoal = async (id: string) => {
     setGoals((prev) => prev.filter((g) => g.id !== id));
-    await deleteGoalFn({ data: { id } });
+    await deleteGoal(Number(id));
   };
 
   const streak = data?.streak ?? 0;
@@ -123,10 +124,12 @@ function Dashboard() {
           <p className="text-[11px] tracking-widest text-foreground/60">MAIN MENU</p>
           {[
             { Icon: LayoutDashboard, label: "Overview", active: true, to: "/dashboard" },
+            { Icon: BookOpen, label: "Library", to: "/library" },
             { Icon: BookOpen, label: "Notes", to: "/notes" },
             { Icon: Zap, label: "Flashcards", to: "/flashcards" },
             { Icon: Trophy, label: "Quizzes", to: "/quizzes" },
             { Icon: FileText, label: "Past Papers", to: "/past-papers" },
+            { Icon: GraduationCap, label: "Exam Prep", to: "/exam-prep" },
             { Icon: GraduationCap, label: "Syllabus", to: "/subjects" },
           ].map((i) => (
             <Link

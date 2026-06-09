@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Search, Bell, Sparkles, LogOut, Menu, X, BookOpen, FileText, Zap, Trophy, Settings } from "lucide-react";
+import { Search, Bell, Sparkles, LogOut, Menu, X, BookOpen, FileText, Zap, Trophy, Settings, Library, GraduationCap } from "lucide-react";
 import { Logo } from "./Logo";
 import { AiPanel } from "./AiPanel";
 import { useAuth } from "@/lib/auth-context";
-import { logoutFn } from "@/api/auth";
+import { logOut } from "@/api/auth";
 
 const navItems = [
+  { to: "/library", label: "Library", Icon: Library },
   { to: "/subjects", label: "Subjects", Icon: BookOpen },
   { to: "/past-papers", label: "Past Papers", Icon: FileText },
   { to: "/flashcards", label: "Flashcards", Icon: Zap },
   { to: "/quizzes", label: "Quizzes", Icon: Trophy },
+  { to: "/exam-prep", label: "Exam Prep", Icon: GraduationCap },
 ] as const;
 
 export function Header({ authed = false }: { authed?: boolean }) {
@@ -21,7 +23,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
   const { user, setUser } = useAuth();
 
   const handleLogout = async () => {
-    await logoutFn();
+    await logOut();
     setUser(null);
     navigate({ to: "/" as any });
   };

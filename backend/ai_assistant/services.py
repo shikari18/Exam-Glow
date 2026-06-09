@@ -1208,6 +1208,17 @@ class AIService:
             prompt = f"Create a study guide for '{resource.title}' (subject: {resource.subject or 'general'})."
         return self.chat_sync([{'role': 'user', 'content': prompt}])
 
+    def raw_completion(self, prompt: str, system: str = '', max_tokens: int = 4096, temperature: float = 0.7) -> str:
+        """
+        Simple raw completion — returns the AI text response as a string.
+        Used by ExamPrepView for structured JSON generation.
+        """
+        messages = []
+        if system:
+            messages.append({'role': 'system', 'content': system})
+        messages.append({'role': 'user', 'content': prompt})
+        return self.chat_sync(messages)
+
     def generate_flashcards(self, resource, count: int = 15, level: str = 'undergrad', context: str = '') -> list:
         content = context or self._get_resource_context(resource)
         base = f"for '{resource.title}' at {level} level"

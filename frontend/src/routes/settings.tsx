@@ -5,7 +5,7 @@ import { Check, Loader2, Save } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
-import { updateSubjectsFn } from "@/api/profile";
+import { updateSubjects } from "@/api/profile";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -54,7 +54,7 @@ function Settings() {
     }
     setSaving(true);
     try {
-      await updateSubjectsFn({ data: { subjects: selectedSubjects } });
+      await updateSubjects(selectedSubjects);
       await refresh();
       toast.success("Subjects updated!");
     } catch (e: any) {

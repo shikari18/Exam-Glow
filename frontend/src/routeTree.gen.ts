@@ -18,8 +18,10 @@ import { Route as PastPapersRouteImport } from './routes/past-papers'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as FlashcardsRouteImport } from './routes/flashcards'
+import { Route as ExamPrepRouteImport } from './routes/exam-prep'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SyllabusSubjectIdRouteImport } from './routes/syllabus.$subjectId'
@@ -72,6 +74,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -80,6 +87,11 @@ const HomeRoute = HomeRouteImport.update({
 const FlashcardsRoute = FlashcardsRouteImport.update({
   id: '/flashcards',
   path: '/flashcards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExamPrepRoute = ExamPrepRouteImport.update({
+  id: '/exam-prep',
+  path: '/exam-prep',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -118,8 +130,10 @@ const PracticeSubjectIdObjectiveIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/exam-prep': typeof ExamPrepRoute
   '/flashcards': typeof FlashcardsRoute
   '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
@@ -137,8 +151,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/exam-prep': typeof ExamPrepRoute
   '/flashcards': typeof FlashcardsRoute
   '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
@@ -157,8 +173,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/exam-prep': typeof ExamPrepRoute
   '/flashcards': typeof FlashcardsRoute
   '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
@@ -178,8 +196,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/exam-prep'
     | '/flashcards'
     | '/home'
+    | '/library'
     | '/login'
     | '/notes'
     | '/onboarding'
@@ -197,8 +217,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/exam-prep'
     | '/flashcards'
     | '/home'
+    | '/library'
     | '/login'
     | '/notes'
     | '/onboarding'
@@ -216,8 +238,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/exam-prep'
     | '/flashcards'
     | '/home'
+    | '/library'
     | '/login'
     | '/notes'
     | '/onboarding'
@@ -236,8 +260,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  ExamPrepRoute: typeof ExamPrepRoute
   FlashcardsRoute: typeof FlashcardsRoute
   HomeRoute: typeof HomeRoute
+  LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   NotesRoute: typeof NotesRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -318,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -330,6 +363,13 @@ declare module '@tanstack/react-router' {
       path: '/flashcards'
       fullPath: '/flashcards'
       preLoaderRoute: typeof FlashcardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exam-prep': {
+      id: '/exam-prep'
+      path: '/exam-prep'
+      fullPath: '/exam-prep'
+      preLoaderRoute: typeof ExamPrepRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -380,8 +420,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  ExamPrepRoute: ExamPrepRoute,
   FlashcardsRoute: FlashcardsRoute,
   HomeRoute: HomeRoute,
+  LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   NotesRoute: NotesRoute,
   OnboardingRoute: OnboardingRoute,
@@ -399,13 +441,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

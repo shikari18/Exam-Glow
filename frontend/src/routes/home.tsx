@@ -3,10 +3,10 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import {
   BookOpen, FileText, Zap, Trophy, TrendingUp, Clock,
-  Target, Award, Flame, ArrowRight, Loader2, GraduationCap,
+  Target, Award, Flame, ArrowRight, Loader2, GraduationCap, Library,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getDashboardDataFn } from "@/api/user";
+import { getDashboardData } from "@/api/user";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
 
@@ -16,9 +16,11 @@ export const Route = createFileRoute("/home")({
 });
 
 const quickActions = [
-  { title: "Revision Notes", desc: "Browse all subjects", icon: BookOpen, to: "/notes", color: "bg-blue-500" },
+  { title: "Study Library", desc: "Upload & generate AI notes", icon: Library, to: "/library", color: "bg-pink-500" },
+  { title: "Exam Prep", desc: "AI open session test", icon: GraduationCap, to: "/exam-prep", color: "bg-indigo-500" },
   { title: "Practice Quiz", desc: "Test your knowledge", icon: Trophy, to: "/quizzes", color: "bg-purple-500" },
   { title: "Flashcards", desc: "Quick revision", icon: Zap, to: "/flashcards", color: "bg-yellow-500" },
+  { title: "Revision Notes", desc: "Browse all subjects", icon: BookOpen, to: "/notes", color: "bg-blue-500" },
   { title: "Past Papers", desc: "Exam practice", icon: FileText, to: "/past-papers", color: "bg-green-500" },
 ];
 
@@ -73,7 +75,7 @@ function Home() {
       return;
     }
     if (!authLoading) {
-      getDashboardDataFn().then((d) => {
+      getDashboardData().then((d) => {
         setData(d);
         setLoading(false);
       }).catch(() => setLoading(false));

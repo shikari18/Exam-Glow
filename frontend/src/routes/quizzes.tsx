@@ -13,7 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import { getQuizSetsFn, getQuizFn, submitQuizFn } from "@/api/quizzes";
+import { getQuizSets, getQuiz, submitQuiz } from "@/api/quizzes";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
 import type { QuizSet, QuizQuestion } from "@/api/quizzes";
@@ -60,7 +60,7 @@ function Quizzes() {
   useEffect(() => {
     if (!authLoading && !user) { navigate({ to: "/login" as any }); return; }
     if (!authLoading) {
-      getQuizSetsFn().then((sets) => { setQuizSets(sets); setLoading(false); });
+      getQuizSets().then((sets) => { setQuizSets(sets); setLoading(false); });
     }
   }, [user, authLoading]);
 
@@ -79,7 +79,7 @@ function Quizzes() {
 
   const loadQuiz = async (quizSet: QuizSet) => {
     setQuizLoading(true);
-    const data = await getQuizFn({ data: { quizId: quizSet.id } });
+    const data = await getQuiz(quizSet.id);
     setSelectedQuiz(data);
     setTimeLeft(data.quiz.time_limit_seconds);
     setCurrentIndex(0);
@@ -107,9 +107,7 @@ function Quizzes() {
     if (!selectedQuiz) return;
     setSubmitting(true);
     const timeTaken = Math.round((Date.now() - startTime.current) / 1000);
-    const res = await submitQuizFn({
-      data: { quizSetId: selectedQuiz.quiz.id, answers, timeTakenSeconds: timeTaken },
-    });
+    const res = await submitQuiz(selectedQuiz.quiz.id, answers, timeTaken);
     setResults(res);
     setSubmitted(true);
     setSubmitting(false);

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getSyllabusData } from "@/data/syllabus";
 import {
-  getSyllabusProgressFn,
-  toggleSyllabusObjectiveFn,
-  bulkSetSyllabusProgressFn,
+  getSyllabusProgress,
+  toggleSyllabusObjective,
+  bulkSetSyllabusProgress,
 } from "@/api/syllabus";
 import { useAuth } from "@/lib/auth-context";
 
@@ -36,11 +36,11 @@ export function useSyllabusProgress(subjectId: string) {
   useEffect(() => {
     if (!user) return;
 
-    getSyllabusProgressFn().then((rows) => {
+    getSyllabusProgress().then((rows) => {
       const dbStore: ProgressStore = {};
       for (const row of rows) {
         if (!dbStore[row.subject_id]) dbStore[row.subject_id] = {};
-        dbStore[row.subject_id][row.objective_id] = row.completed === 1;
+        dbStore[row.subject_id][row.objective_id] = row.completed === true || (row.completed as any) === 1;
       }
 
       // Migrate localStorage → DB on first load
@@ -59,7 +59,7 @@ export function useSyllabusProgress(subjectId: string) {
         }
 
         if (toMigrate.length > 0) {
-          bulkSetSyllabusProgressFn({ data: { progress: toMigrate } }).then(() => {
+          bulkSetSyllabusProgress(toMigrate).then(() => {
             // Merge migrated data into dbStore
             for (const item of toMigrate) {
               if (!dbStore[item.subjectId]) dbStore[item.subjectId] = {};
@@ -111,9 +111,7 @@ export function useSyllabusProgress(subjectId: string) {
 
       // Persist to DB if logged in, otherwise localStorage
       if (user) {
-        await toggleSyllabusObjectiveFn({
-          data: { subjectId, objectiveId, completed: next },
-        }).catch(() => {
+        await toggleSyllabusObjective(subjectId, objectiveId, next).catch(() => {
           // Revert on failure
           setStore((prev) => ({
             ...prev,
@@ -139,9 +137,7 @@ export function useSyllabusProgress(subjectId: string) {
       });
 
       if (user) {
-        await toggleSyllabusObjectiveFn({
-          data: { subjectId, objectiveId, completed: true },
-        }).catch(() => {});
+        await toggleSyllabusObjective(subjectId, objectiveId, true).catch(() => {});
       }
     },
     [subjectId, user]

@@ -9,6 +9,7 @@ from .views import (
     VisionMessageView, GenerateDiagramView, GenerateImageView,
     AgentView, AgentStreamView, AgentAudioView,
 )
+from .exam_prep import ExamPrepView
 
 from .views_podcast import (
     PodcastInitView, PodcastStatusView, PodcastChunkAudioView, PodcastInterruptView
@@ -40,4 +41,6 @@ urlpatterns = [
     path('resources/<int:resource_id>/chapters/', ChapterSummariesView.as_view()),
     path('resources/<int:resource_id>/save/', SaveContentView.as_view()),
     path('resources/<int:resource_id>/grade/', GradeAnswerView.as_view()),
+    # ExamGlow: open-session exam prep
+    path('exam-prep/', ExamPrepView.as_view(), name='exam-prep'),
 ]

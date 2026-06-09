@@ -6,7 +6,8 @@ import { getChaptersForSubject, noteChapters } from "@/data/notes/index";
 import { ArrowLeft, BookOpen, Bookmark, Share2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { toggleBookmarkFn, checkBookmarkFn, logActivityFn } from "@/api/user";
+import { toggleBookmark, checkBookmark } from "@/api/user";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/subject-notes/$subject")({
@@ -39,16 +40,18 @@ function SubjectNotes() {
 
   useEffect(() => {
     if (!user || !activeChapter) return;
-    checkBookmarkFn({ data: { resourceType: "Note", title: `${subject}: ${activeChapter.title}` } })
+    checkBookmark("Note", `${subject}: ${activeChapter.title}`)
       .then((r) => setBookmarked(r.bookmarked));
-    logActivityFn({ data: { activityType: "Notes", title: `${subject}: ${activeChapter?.title ?? subject}`, scoreText: null } }).catch(() => {});
+    api.post('/api/examglow/bookmarks/', {
+      resourceType: "Notes", title: `${subject}: ${activeChapter?.title ?? subject}`, subject
+    }).catch(() => {});
   }, [user, subject, activeChapterIndex]);
 
   const handleBookmark = async () => {
     if (!user || !activeChapter) { toast.info("Sign in to bookmark"); return; }
     setBookmarkLoading(true);
-    const res = await toggleBookmarkFn({
-      data: { resourceType: "Note", title: `${subject}: ${activeChapter.title}`, subject, url: `/subject-notes/${subject}` },
+    const res = await toggleBookmark({
+      resourceType: "Note", title: `${subject}: ${activeChapter.title}`, subject, url: `/subject-notes/${subject}`,
     });
     setBookmarked(res.bookmarked);
     setBookmarkLoading(false);

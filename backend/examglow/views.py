@@ -2,7 +2,7 @@
 ExamGlow API views — syllabus, quizzes, flashcards, past papers, goals, bookmarks.
 These mirror the createServerFn handlers in yuna's src/api/*.ts files.
 """
-from django.db.models import Count, Max, Avg
+from django.db.models import Count, Max, Avg, ExpressionWrapper, FloatField, F, Q
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -91,14 +91,13 @@ class QuizSetListView(generics.ListAPIView):
         return (
             QuizSet.objects
             .annotate(
-                attempt_count=Count('attempts', filter=__import__('django.db.models', fromlist=['Q']).Q(attempts__user=user)),
+                attempt_count=Count('attempts', filter=Q(attempts__user=user)),
                 best_score=Max(
-                    __import__('django.db.models', fromlist=['ExpressionWrapper', 'FloatField']).ExpressionWrapper(
-                        __import__('django.db.models', fromlist=['F']).F('attempts__score') * 100.0 /
-                        __import__('django.db.models', fromlist=['F']).F('attempts__total'),
-                        output_field=__import__('django.db.models', fromlist=['FloatField']).FloatField()
+                    ExpressionWrapper(
+                        F('attempts__score') * 100.0 / F('attempts__total'),
+                        output_field=FloatField()
                     ),
-                    filter=__import__('django.db.models', fromlist=['Q']).Q(attempts__user=user),
+                    filter=Q(attempts__user=user),
                 )
             )
             .order_by('subject', 'title')
@@ -441,10 +440,9 @@ class DashboardView(APIView):
         quiz_stats = QuizAttempt.objects.filter(user=user).aggregate(
             total_attempts=Count('id'),
             avg_score=Avg(
-                __import__('django.db.models', fromlist=['ExpressionWrapper', 'FloatField']).ExpressionWrapper(
-                    __import__('django.db.models', fromlist=['F']).F('score') * 100.0 /
-                    __import__('django.db.models', fromlist=['F']).F('total'),
-                    output_field=__import__('django.db.models', fromlist=['FloatField']).FloatField()
+                ExpressionWrapper(
+                    F('score') * 100.0 / F('total'),
+                    output_field=FloatField()
                 )
             )
         )
