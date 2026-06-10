@@ -12,7 +12,6 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     # Unfold must come before django.contrib.admin
-    'daphne',
     'unfold',
     'unfold.contrib.filters',
     'unfold.contrib.forms',

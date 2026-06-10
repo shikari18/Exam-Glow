@@ -30,24 +30,30 @@ cd backend
 
 # Create a virtual environment
 python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Mac/Linux
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY at minimum
+# .env is pre-configured for SQLite dev — no changes needed to start
+
+# IMPORTANT: If you have Python 3.14 and Django 6.0 is auto-installed,
+# patch the deprecation module (one-time fix):
+# Add "class RemovedInDjango70Warning(PendingDeprecationWarning): pass"
+# to .venv/Lib/site-packages/django/utils/deprecation.py
 
 # Run migrations
 python manage.py migrate
 
-# Create a superuser
+# Create a superuser (for admin access at /admin/)
 python manage.py createsuperuser
 
-# Start the server
+# Start the server (plain WSGI — faster for dev)
 python manage.py runserver
-# API available at http://localhost:8000
+# API available at http://127.0.0.1:8000
 ```
 
 ### Frontend (React + Vite)

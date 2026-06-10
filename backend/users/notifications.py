@@ -6,41 +6,52 @@ def create_notification(user, type: str, title: str, body: str, link: str = ''):
     """Create a notification and trigger a Push notification if possible."""
     try:
         from .models import Notification
-        from .push_service import PushService
         import threading
-        
+
         # 1. Save to Database
         notif = Notification.objects.create(user=user, type=type, title=title, body=body, link=link)
-        
-        # 2. Trigger WS Push (Real-time)
-        from channels.layers import get_channel_layer
-        from asgiref.sync import async_to_sync
-        
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_notifications_{user.id}",
-            {
-                "type": "send_notification",
-                "notification": {
-                    "id": notif.id,
-                    "type": notif.type,
-                    "title": notif.title,
-                    "body": notif.body,
-                    "link": notif.link,
-                    "is_read": notif.is_read,
-                    "created_at": notif.created_at.isoformat(),
-                }
-            }
-        )
+
+        # 2. Trigger WS Push in a separate thread to avoid blocking the request
+        def send_ws():
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_notifications_{user.id}",
+                        {
+                            "type": "send_notification",
+                            "notification": {
+                                "id": notif.id,
+                                "type": notif.type,
+                                "title": notif.title,
+                                "body": notif.body,
+                                "link": notif.link,
+                                "is_read": notif.is_read,
+                                "created_at": notif.created_at.isoformat(),
+                            }
+                        }
+                    )
+            except Exception:
+                pass
+
+        ws_thread = threading.Thread(target=send_ws)
+        ws_thread.daemon = True
+        ws_thread.start()
 
         # 3. Trigger Push (Async to avoid blocking)
         def send_push():
-            PushService.send_notification(user, title, body, link)
-            
-        thread = threading.Thread(target=send_push)
-        thread.daemon = True
-        thread.start()
-        
+            try:
+                from .push_service import PushService
+                PushService.send_notification(user, title, body, link)
+            except Exception:
+                pass
+
+        push_thread = threading.Thread(target=send_push)
+        push_thread.daemon = True
+        push_thread.start()
+
     except Exception as e:
         import logging
         logger = logging.getLogger('nitemind')
