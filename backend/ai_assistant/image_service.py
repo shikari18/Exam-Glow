@@ -111,14 +111,10 @@ def generate_ai_image(prompt):
                         break
     except Exception: pass
 
-    # --- FINAL FALLBACK: Unsplash ---
+    # --- FINAL FALLBACK: Direct Pollinations URL ---
     try:
-        query = words[0] if words else "science"
-        url = f"https://images.unsplash.com/photo-1628191140046-8de994a974b2?auto=format&fit=crop&q=80&w=800&q={query}"
-        res = requests.get(url, timeout=5)
-        if res.status_code == 200:
-            encoded = base64.b64encode(res.content).decode('utf-8')
-            return f"data:image/jpeg;base64,{encoded}"
+        encoded_prompt = requests.utils.quote(f"{prompt}. {style}.")
+        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=500&nologo=true&seed={random.randint(1, 99999)}"
     except Exception: pass
     
     return None

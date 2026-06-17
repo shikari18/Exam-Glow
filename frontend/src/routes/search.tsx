@@ -94,7 +94,14 @@ const TYPE_COLORS: Record<string, string> = {
   "Past Paper": "bg-green-50 text-green-700",
 };
 
-const SUBJECTS = ["Biology", "Chemistry", "Physics", "Mathematics"];
+const SUBJECTS = [
+  "Biology", "Chemistry", "Physics", "Mathematics", "Additional Mathematics",
+  "Geography", "English Language", "English Literature", "ICT/Computer Science", "History",
+  "Economics", "Business Studies", "Accounting", "Sociology", "Psychology",
+  "Art & Design", "Music", "French", "Spanish", "Arabic",
+  "German", "Global Perspectives", "Environmental Management", "Physical Education", "Drama",
+  "Design & Technology", "Enterprise", "Marine Science", "Food & Nutrition", "Travel & Tourism"
+];
 const TYPES = ["Note", "Quiz", "Flashcard", "Past Paper"] as const;
 
 function SearchPage() {

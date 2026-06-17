@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Search, Bell, Sparkles, LogOut, Menu, X, BookOpen, FileText, Zap, Trophy, Settings, Library, GraduationCap } from "lucide-react";
+import { Search, Bell, Bot, LogOut, Menu, X, BookOpen, FileText, Zap, Trophy, Settings, Library, GraduationCap } from "lucide-react";
 import { Logo } from "./Logo";
 import { AiPanel } from "./AiPanel";
 import { useAuth } from "@/lib/auth-context";
@@ -57,7 +57,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
                 onClick={() => setAiOpen(true)}
                 className="flex items-center gap-1.5 text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+              <Bot className="w-3.5 h-3.5" />
                 AI Tutor
               </button>
             )}
@@ -76,7 +76,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
                 className="p-2 rounded-full hover:bg-muted"
                 aria-label="Open AI tutor"
               >
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Bot className="w-4 h-4 text-primary" />
               </button>
             )}
             {isAuthed ? (
@@ -153,7 +153,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
                 onClick={() => { setAiOpen(true); setMobileOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted"
               >
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Bot className="w-4 h-4 text-primary" />
                 AI Tutor
               </button>
             )}

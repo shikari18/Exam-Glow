@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  X,
-  Send,
-  Mic,
-  MicOff,
-  User,
-  Volume2,
-  VolumeX,
-  Plus,
-  History,
+  X, Send, Mic, MicOff, User, Volume2, VolumeX,
+  Plus, History, Radio, Image as ImageIcon, Bot,
 } from "lucide-react";
+import { VoiceOrb } from "./VoiceOrb";
+import { generateDiagramImage } from "@/lib/imageGen";
+import { speakGemini, type GeminiSpeechHandle } from "@/lib/gemini-speech";
 
 interface Message {
   role: "user" | "assistant";
   text: string;
+  imageUrl?: string;
+  isStreaming?: boolean;
 }
 
 interface ChatSession {
@@ -30,23 +28,296 @@ const SUGGESTIONS = [
   "Summarise the carbon cycle",
 ];
 
-const STORAGE_KEY = "examglow_ai_history_v1";
+const STORAGE_KEY = "examglow_ai_history_v2";
 const INITIAL_MESSAGE: Message = {
   role: "assistant",
-  text: "Hi! I'm your ExamGlow AI tutor 🌸 I'm here to help you truly understand your IGCSE subjects. Ask me anything — I'll explain concepts step-by-step, give you fresh examples, and make sure you really get it!",
+  text: "Hi! I'm **Yumna**, your personal ExamGlow AI tutor 🌸\n\nI'm here to help you truly understand your IGCSE subjects. Ask me anything — I'll explain concepts step-by-step, give you examples, and make sure you really *get it*!\n\nYou can also tap the 🎙️ button below to **switch to voice mode** and talk with me directly!",
 };
+
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
+
+const SYSTEM_PROMPT = `You are Yumna, an expert IGCSE tutor and AI assistant for ExamGlow. You are warm, encouraging, and extremely knowledgeable.
+
+When answering questions, format your responses using this markdown syntax:
+- Use **bold text** for key terms and important concepts
+- Use *italic* for emphasis  
+- Use ## for section headings
+- Use ### for sub-headings
+- Use numbered lists (1. 2. 3.) for steps or ordered content
+- Use bullet points (- or •) for lists
+- Use /n for new lines where needed
+- Use ==highlight== to highlight critical facts
+- Keep responses well-structured and easy to read
+
+Include diagrams/images when helpful — if you want to show an educational diagram, include [IMAGE: detailed description of what the diagram should show] on its own line and I will generate it.
+
+Be conversational, encouraging, and thorough. Break complex topics into digestible parts. Reference IGCSE mark-scheme language where relevant.`;
+
+// ── Markdown renderer ──────────────────────────────────────────────────────────
+function parseInline(text: string): React.ReactNode[] {
+  if (!text) return [];
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|==\S[^=]*\S==|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    if (part.startsWith("==") && part.endsWith("=="))
+      return <mark key={i} className="bg-primary/20 text-primary px-0.5 rounded text-[0.9em] not-italic font-semibold">{part.slice(2, -2)}</mark>;
+    if (part.startsWith("`") && part.endsWith("`"))
+      return <code key={i} className="bg-muted px-1 py-0.5 rounded text-xs font-mono text-foreground/80">{part.slice(1, -1)}</code>;
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function renderMarkdown(text: string, isUser: boolean): React.ReactNode {
+  // Normalize newlines and /n
+  const normalized = text.replace(/\/n/g, "\n").replace(/\\n/g, "\n");
+  const lines = normalized.split("\n");
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    // ## Heading
+    if (trimmed.startsWith("## ")) {
+      elements.push(
+        <h3 key={i} className="font-bold text-base mt-3 mb-1 text-foreground">
+          {parseInline(trimmed.slice(3))}
+        </h3>
+      );
+      i++;
+      continue;
+    }
+
+    // ### Sub-heading
+    if (trimmed.startsWith("### ")) {
+      elements.push(
+        <h4 key={i} className="font-semibold text-sm mt-2 mb-1 text-foreground">
+          {parseInline(trimmed.slice(4))}
+        </h4>
+      );
+      i++;
+      continue;
+    }
+
+    // Numbered list — collect consecutive items
+    if (/^\d+\.\s/.test(trimmed)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^\d+\.\s/, ""));
+        i++;
+      }
+      elements.push(
+        <ol key={`ol-${i}`} className="space-y-1 my-2 ml-1">
+          {items.map((item, j) => (
+            <li key={j} className="flex items-start gap-2.5">
+              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 ${isUser ? "bg-white/20 text-white" : "bg-primary/15 text-primary"}`}>
+                {j + 1}
+              </span>
+              <span className="flex-1 leading-relaxed">{parseInline(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
+    // Bullet list — collect consecutive items
+    if (trimmed.startsWith("- ") || trimmed.startsWith("• ") || trimmed.startsWith("* ")) {
+      const items: string[] = [];
+      while (i < lines.length && (lines[i].trim().startsWith("- ") || lines[i].trim().startsWith("• ") || lines[i].trim().startsWith("* "))) {
+        items.push(lines[i].trim().replace(/^[-•*]\s/, ""));
+        i++;
+      }
+      elements.push(
+        <ul key={`ul-${i}`} className="space-y-1 my-2 ml-1">
+          {items.map((item, j) => (
+            <li key={j} className="flex items-start gap-2.5">
+              <span className={`shrink-0 w-1.5 h-1.5 rounded-full mt-2 ${isUser ? "bg-white/60" : "bg-primary"}`} />
+              <span className="flex-1 leading-relaxed">{parseInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // [IMAGE: description] — image generation placeholder
+    const imgMatch = trimmed.match(/^\[IMAGE:\s*(.+)\]$/i);
+    if (imgMatch) {
+      elements.push(<MessageImage key={i} prompt={imgMatch[1]} />);
+      i++;
+      continue;
+    }
+
+    // Catch AI outputting "Diagram: description" or "**Diagram:** description" as plain text
+    const diagramTextMatch = trimmed.match(/^(?:\*\*)?Diagram:(?:\*\*)?\s+(.+)$/i);
+    if (diagramTextMatch) {
+      elements.push(<MessageImage key={i} prompt={diagramTextMatch[1]} />);
+      i++;
+      continue;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <p key={i} className="leading-relaxed my-1">
+        {parseInline(trimmed)}
+      </p>
+    );
+    i++;
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
+// ── Auto-generated image component (Gemini Imagen 3 → Pollinations fallback) ──
+function MessageImage({ prompt }: { prompt: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setSrc(null);
+    setImgError(false);
+
+    generateDiagramImage(prompt).then((url) => {
+      if (!cancelled) {
+        setSrc(url);
+        // If it's a data URI it's already loaded; if URL we wait for <img> onLoad
+        if (url.startsWith("data:")) setLoading(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [prompt]);
+
+  return (
+    <figure className="mt-3 rounded-2xl overflow-hidden border border-border bg-muted/20 shadow-sm">
+      {loading && (
+        <div className="h-40 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-violet-500/5 animate-pulse gap-2">
+          <ImageIcon className="w-6 h-6 text-primary/40 animate-pulse" />
+          <span className="text-[11px] text-foreground/40 font-medium">Generating diagram with Gemini AI...</span>
+        </div>
+      )}
+      {src && !src.startsWith("data:") && (
+        <img
+          src={src}
+          alt={prompt}
+          className={`w-full object-contain max-h-72 ${loading ? "hidden" : "block"}`}
+          onLoad={() => setLoading(false)}
+          onError={() => { setLoading(false); setImgError(true); }}
+        />
+      )}
+      {src && src.startsWith("data:") && !imgError && (
+        <img
+          src={src}
+          alt={prompt}
+          className="w-full object-contain max-h-72 block"
+          onError={() => setImgError(true)}
+        />
+      )}
+      {imgError && (
+        <div className="h-24 flex items-center justify-center text-xs text-foreground/40 gap-2">
+          <ImageIcon className="w-4 h-4" /> Unable to generate diagram
+        </div>
+      )}
+      <figcaption className="text-[10px] text-foreground/40 text-center px-3 py-2 italic border-t border-border bg-muted/10">
+        📐 {prompt}
+      </figcaption>
+    </figure>
+  );
+}
+
+// ── Typewriter text component ─────────────────────────────────────────────────
+function TypewriterMessage({ text, onDone }: { text: string; onDone?: () => void }) {
+  const [displayed, setDisplayed] = useState("");
+  const indexRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    indexRef.current = 0;
+    setDisplayed("");
+    
+    const speed = 12; // ms per char — "speed 2" feel
+    const tick = () => {
+      if (indexRef.current < text.length) {
+        // Advance by 2-3 chars at once for speed
+        const step = text[indexRef.current] === "\n" ? 1 : 2;
+        indexRef.current = Math.min(indexRef.current + step, text.length);
+        setDisplayed(text.slice(0, indexRef.current));
+        timerRef.current = setTimeout(tick, speed);
+      } else {
+        onDone?.();
+      }
+    };
+    timerRef.current = setTimeout(tick, speed);
+    return () => clearTimeout(timerRef.current);
+  }, [text]);
+
+  return <>{renderMarkdown(displayed, false)}</>;
+}
 
 export function AiPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string>(() => crypto.randomUUID());
+  const [voiceOrbOpen, setVoiceOrbOpen] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+  const speechHandleRef = useRef<GeminiSpeechHandle | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Stop TTS speech on unmount/close
+  useEffect(() => {
+    return () => {
+      speechHandleRef.current?.stop();
+      speechHandleRef.current = null;
+    };
+  }, []);
+
+  function sanitizeForSpeech(text: string): string {
+    let clean = text.replace(/\/n/g, " ").replace(/\\n/g, " ");
+    clean = clean.replace(/\[IMAGE:\s*[^\]]+\]/gi, "");
+    clean = clean.replace(/\*\*([^*]+)\*\*/g, "$1");
+    clean = clean.replace(/\*([^*]+)\*/g, "$1");
+    clean = clean.replace(/==([^=]+)==/g, "$1");
+    clean = clean.replace(/`([^`]+)`/g, "$1");
+    clean = clean.replace(/#+\s+/g, "");
+    return clean.trim();
+  }
+
+  function speakMessage(index: number, text: string) {
+    if (speakingIndex === index) {
+      speechHandleRef.current?.stop();
+      speechHandleRef.current = null;
+      setSpeakingIndex(null);
+      return;
+    }
+
+    speechHandleRef.current?.stop();
+    speechHandleRef.current = null;
+    const sanitized = sanitizeForSpeech(text);
+    setSpeakingIndex(index);
+    speechHandleRef.current = speakGemini(sanitized, {
+      onDone: () => setSpeakingIndex(null),
+      onError: () => setSpeakingIndex(null),
+    });
+  }
 
   useEffect(() => {
     try {
@@ -54,40 +325,23 @@ export function AiPanel({ open, onClose }: { open: boolean; onClose: () => void 
       if (!raw) return;
       const parsed = JSON.parse(raw) as ChatSession[];
       if (Array.isArray(parsed)) setChatHistory(parsed);
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }, []);
 
   function persistHistory(next: ChatSession[]) {
     setChatHistory(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
   }
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }, [messages, isTyping]);
 
-  function speak(text: string) {
-    if (!ttsEnabled) return;
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    window.speechSynthesis.speak(u);
-  }
-
   useEffect(() => {
-    // Stop any ongoing voice capture / speech when closing the panel
     if (!open) {
       recognitionRef.current?.stop();
       setListening(false);
       setHistoryOpen(false);
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     }
   }, [open]);
 
@@ -98,7 +352,6 @@ export function AiPanel({ open, onClose }: { open: boolean; onClose: () => void 
   }
 
   function startNewChat() {
-    // Save current chat if it has user content
     const hasUser = messages.some((m) => m.role === "user");
     if (hasUser) {
       const session: ChatSession = {
@@ -116,10 +369,6 @@ export function AiPanel({ open, onClose }: { open: boolean; onClose: () => void 
     setHistoryOpen(false);
   }
 
-  function openHistory() {
-    setHistoryOpen(true);
-  }
-
   function loadChat(session: ChatSession) {
     setActiveChatId(session.id);
     setMessages(session.messages);
@@ -127,52 +376,38 @@ export function AiPanel({ open, onClose }: { open: boolean; onClose: () => void 
     setInput("");
   }
 
-  // Real AI reply using Groq API
   async function simulateReply(userMsg: string) {
     setIsTyping(true);
 
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-
-    if (!apiKey || apiKey === "your_groq_api_key_here") {
+    if (!GROQ_API_KEY || GROQ_API_KEY === "your_groq_api_key_here") {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: "AI Tutor is not configured yet. Add your VITE_GROQ_API_KEY to the .env file. Get a free key at console.groq.com/keys" },
+        { role: "assistant", text: "AI Tutor not configured. Add `VITE_GROQ_API_KEY` to `.env`." },
       ]);
       setIsTyping(false);
       return;
     }
 
     try {
+      const history = messages
+        .filter((m) => !m.isStreaming)
+        .map((m) => ({ role: m.role, content: m.text }));
+
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
+          Authorization: `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [
-            {
-              role: "system",
-              content: `You are a helpful IGCSE study assistant for ExamGlow. You act as a real tutor, not just a text retriever.
-
-When answering questions:
-1. Understand the student's question deeply
-2. Generate fresh, original explanations
-3. Break down complex concepts step-by-step
-4. Provide new examples to illustrate concepts
-5. Be conversational and engaging
-6. Use clear, simple language appropriate for IGCSE students (ages 14-16)
-7. Encourage the student and build confidence
-8. Reference mark-scheme language where relevant
-
-Your goal is to help students truly understand concepts, not just memorize facts. Be patient, encouraging, and adapt your explanations to the student's level.`,
-            },
-            ...messages.map((m) => ({ role: m.role, content: m.text })),
+            { role: "system", content: SYSTEM_PROMPT },
+            ...history,
             { role: "user", content: userMsg },
           ],
           temperature: 0.7,
-          max_tokens: 1024,
+          max_tokens: 1500,
         }),
       });
 
@@ -183,20 +418,22 @@ Your goal is to help students truly understand concepts, not just memorize facts
 
       const data = await response.json();
       const reply = data.choices?.[0]?.message?.content ?? "Sorry, I couldn't generate a response.";
-      setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+
+      // Add as streaming message
       setIsTyping(false);
-      speak(reply);
+      setMessages((prev) => [...prev, { role: "assistant", text: reply, isStreaming: true }]);
     } catch (error: any) {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: `Error: ${error?.message ?? "Something went wrong. Please try again."}` },
+        { role: "assistant", text: `Sorry, something went wrong: ${error?.message ?? "Please try again."}` },
       ]);
-      setIsTyping(false);
     }
   }
+
   function send(text?: string) {
     const msg = (text ?? input).trim();
-    if (!msg) return;
+    if (!msg || isTyping) return;
     setMessages((prev) => [...prev, { role: "user", text: msg }]);
     setInput("");
     simulateReply(msg);
@@ -204,30 +441,16 @@ Your goal is to help students truly understand concepts, not just memorize facts
 
   function toggleVoice() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SR) {
-      alert("Voice input is not supported in this browser.");
-      return;
-    }
-
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
-    }
-
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      send(transcript);
-      setListening(false);
-    };
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
+    if (!SR) { alert("Voice input not supported. Try Chrome."); return; }
+    if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.onresult = (e: any) => { send(e.results[0][0].transcript); setListening(false); };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    rec.start();
     setListening(true);
   }
 
@@ -239,7 +462,7 @@ Your goal is to help students truly understand concepts, not just memorize facts
         onClick={onClose}
       />
 
-      {/* Slide-up panel — stops just below the nav (top-16 = 64px nav height) */}
+      {/* Slide-up panel */}
       <div
         className={`fixed left-0 right-0 bottom-0 z-50 flex flex-col bg-white rounded-t-3xl shadow-2xl border-t border-border transition-transform duration-400 ease-in-out`}
         style={{
@@ -252,68 +475,47 @@ Your goal is to help students truly understand concepts, not just memorize facts
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <img
-              src="/favicon.ico"
-              alt="ExamGlow AI"
-              className="w-9 h-9 rounded-full object-cover border border-border"
-            />
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center border border-primary/30 shadow-sm">
+              <span className="text-white text-sm font-bold">Y</span>
+            </div>
             <div>
-              <p className="font-bold text-sm">ExamGlow AI Tutor</p>
-              <p className="text-xs text-foreground/60">Your personal IGCSE study assistant</p>
+              <p className="font-bold text-sm">Yumna — AI Tutor</p>
+              <p className="text-xs text-foreground/50">Your personal IGCSE study assistant</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
-              onClick={startNewChat}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="New chat"
-              title="New chat"
+              onClick={() => setVoiceOrbOpen(true)}
+              className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-purple-500/10 hover:from-primary/20 hover:to-purple-500/20 text-primary border border-primary/20 transition-all"
+              title="Live voice mode"
             >
-              <Plus className="w-5 h-5" />
+              <Radio className="w-4 h-4" />
             </button>
-            <button
-              onClick={openHistory}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Chat history"
-              title="Chat history"
-            >
-              <History className="w-5 h-5" />
+            <button onClick={startNewChat} className="p-2 rounded-full hover:bg-muted transition-colors" title="New chat">
+              <Plus className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setTtsEnabled((v) => !v)}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label={ttsEnabled ? "Mute AI voice" : "Unmute AI voice"}
-              title={ttsEnabled ? "Mute AI voice" : "Unmute AI voice"}
-            >
-              {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            <button onClick={() => setHistoryOpen(true)} className="p-2 rounded-full hover:bg-muted transition-colors" title="Chat history">
+              <History className="w-4 h-4" />
             </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Close AI panel"
-            >
-              <X className="w-5 h-5" />
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-muted transition-colors">
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="relative flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="relative flex-1 overflow-y-auto px-5 py-4 space-y-5">
           {historyOpen && (
-            <div className="absolute inset-0 bg-white z-10 flex flex-col">
-              <div className="flex items-center justify-between py-3 border-b border-border">
-                <p className="font-bold text-sm">Chat history</p>
-                <button
-                  onClick={() => setHistoryOpen(false)}
-                  className="p-2 rounded-full hover:bg-muted"
-                  aria-label="Close history"
-                >
+            <div className="absolute inset-0 bg-white z-10 flex flex-col p-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-bold text-sm">Chat History</p>
+                <button onClick={() => setHistoryOpen(false)} className="p-1.5 rounded-full hover:bg-muted">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="py-3 space-y-2 overflow-y-auto">
+              <div className="space-y-2 overflow-y-auto flex-1">
                 {chatHistory.length === 0 ? (
-                  <p className="text-sm text-foreground/60">No previous chats yet.</p>
+                  <p className="text-sm text-foreground/50 text-center py-8">No previous chats yet.</p>
                 ) : (
                   chatHistory.map((c) => (
                     <button
@@ -322,9 +524,7 @@ Your goal is to help students truly understand concepts, not just memorize facts
                       className="w-full text-left rounded-xl border border-border px-4 py-3 hover:bg-muted/40 transition-colors"
                     >
                       <p className="font-semibold text-sm">{c.title}</p>
-                      <p className="text-xs text-foreground/50 mt-0.5">
-                        {new Date(c.createdAt).toLocaleString()}
-                      </p>
+                      <p className="text-xs text-foreground/40 mt-0.5">{new Date(c.createdAt).toLocaleString()}</p>
                     </button>
                   ))
                 )}
@@ -333,40 +533,63 @@ Your goal is to help students truly understand concepts, not just memorize facts
           )}
 
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${m.role === "assistant" ? "bg-primary" : "bg-lavender-soft"}`}
-              >
-                {m.role === "assistant" ? (
-                  <img src="/favicon.ico" alt="AI" className="w-8 h-8 rounded-full object-cover" />
-                ) : (
-                  <User className="w-4 h-4 text-lavender" />
-                )}
+            <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
+                m.role === "assistant" ? "bg-gradient-to-br from-primary to-purple-500 text-white" : "bg-lavender-soft"
+              }`}>
+                {m.role === "assistant" ? "Y" : <User className="w-4 h-4 text-lavender" />}
               </div>
-              <div
-                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+              <div className="flex flex-col gap-1 max-w-[80%]">
+                <div className={`rounded-2xl px-4 py-3 text-sm ${
                   m.role === "assistant"
                     ? "bg-pink-softer text-foreground rounded-tl-none"
                     : "bg-primary text-white rounded-tr-none"
-                }`}
-              >
-                {m.text}
+                }`}>
+                  {m.isStreaming ? (
+                    <TypewriterMessage
+                      text={m.text}
+                      onDone={() => {
+                        setMessages(prev => prev.map((msg, idx) =>
+                          idx === i ? { ...msg, isStreaming: false } : msg
+                        ));
+                      }}
+                    />
+                  ) : (
+                    renderMarkdown(m.text, m.role === "user")
+                  )}
+                  {m.imageUrl && (
+                    <img src={m.imageUrl} alt="AI generated" className="mt-3 rounded-xl w-full max-h-48 object-contain border border-border" />
+                  )}
+                </div>
+                
+                {/* TTS Speaker pill */}
+                {m.role === "assistant" && !m.isStreaming && (
+                  <button
+                    onClick={() => speakMessage(i, m.text)}
+                    className={`flex items-center gap-1 self-start text-[10px] font-medium transition-colors px-2 py-0.5 rounded-full mt-0.5 border ${
+                      speakingIndex === i
+                        ? "bg-primary/15 text-primary border-primary/20 animate-pulse"
+                        : "bg-muted/30 text-foreground/45 hover:text-primary hover:bg-primary/5 border-transparent"
+                    }`}
+                    title={speakingIndex === i ? "Stop speaking" : "Speak reply"}
+                  >
+                    <Volume2 className="w-3 h-3" />
+                    <span>{speakingIndex === i ? "Stop" : "Listen"}</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}
 
           {isTyping && (
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                <img src="/favicon.ico" alt="AI" className="w-8 h-8 rounded-full object-cover" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shrink-0">
+                <span className="text-white text-xs font-bold">Y</span>
               </div>
-              <div className="bg-pink-softer rounded-2xl rounded-tl-none px-4 py-3 flex gap-1 items-center">
-                <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:0ms]" />
-                <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:150ms]" />
-                <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:300ms]" />
+              <div className="bg-pink-softer rounded-2xl rounded-tl-none px-4 py-3 flex gap-1.5 items-center">
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           )}
@@ -375,7 +598,7 @@ Your goal is to help students truly understand concepts, not just memorize facts
 
         {/* Suggestions */}
         {messages.length === 1 && (
-          <div className="px-6 pb-2 flex gap-2 flex-wrap shrink-0">
+          <div className="px-5 pb-2 flex gap-2 flex-wrap shrink-0">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
@@ -388,37 +611,40 @@ Your goal is to help students truly understand concepts, not just memorize facts
           </div>
         )}
 
-        {/* Input bar */}
-        <div className="px-6 py-4 border-t border-border shrink-0">
-          <div className="flex items-center gap-3 bg-muted/50 rounded-full px-4 py-2">
+        {/* Input */}
+        <div className="px-5 py-4 border-t border-border shrink-0">
+          <div className="flex items-center gap-3 bg-muted/40 rounded-2xl px-4 py-2.5 border border-border/50">
             <button
               onClick={toggleVoice}
-              className={`p-1.5 rounded-full transition-colors ${listening ? "bg-primary text-white animate-pulse" : "text-foreground/50 hover:text-primary"}`}
-              aria-label={listening ? "Stop voice input" : "Start voice input"}
+              className={`p-1.5 rounded-full transition-colors shrink-0 ${listening ? "bg-primary text-white animate-pulse" : "text-foreground/40 hover:text-primary"}`}
             >
               {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
             <input
-              className="flex-1 bg-transparent outline-none text-sm py-1"
-              placeholder={listening ? "Listening…" : "Ask anything about your subjects…"}
+              className="flex-1 bg-transparent outline-none text-sm py-0.5 placeholder:text-foreground/40"
+              placeholder={listening ? "Listening…" : "Ask Yumna anything…"}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
             />
             <button
               onClick={() => send()}
-              disabled={!input.trim()}
-              className="p-1.5 rounded-full bg-primary text-white disabled:opacity-40 transition-opacity"
-              aria-label="Send message"
+              disabled={!input.trim() || isTyping}
+              className="p-1.5 rounded-full bg-primary text-white disabled:opacity-30 transition-opacity shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-center text-[10px] text-foreground/40 mt-2">
-            ExamGlow AI · Powered by your curiosity 🌸
+          <p className="text-center text-[10px] text-foreground/30 mt-2">
+            Yumna · ExamGlow AI ·{" "}
+            <button onClick={() => setVoiceOrbOpen(true)} className="text-primary hover:underline">
+              Switch to live voice ✨
+            </button>
           </p>
         </div>
       </div>
+
+      <VoiceOrb open={voiceOrbOpen} onClose={() => setVoiceOrbOpen(false)} />
     </>
   );
 }

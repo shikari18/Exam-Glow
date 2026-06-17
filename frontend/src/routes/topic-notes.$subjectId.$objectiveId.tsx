@@ -14,6 +14,8 @@ import {
   StickyNote,
   Link2,
 } from "lucide-react";
+import { NoteAiChat } from "@/components/NoteAiChat";
+
 
 export const Route = createFileRoute(
   "/topic-notes/$subjectId/$objectiveId",
@@ -386,6 +388,14 @@ function TopicNotesPage() {
       </main>
 
       <Footer />
+
+      {/* Floating AI Chat */}
+      <NoteAiChat
+        noteTitle={note.title}
+        noteSubject={syllabusData.subject.name}
+        noteContext={note.keyPoints.join(", ")}
+      />
     </div>
   );
 }
+

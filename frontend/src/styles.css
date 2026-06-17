@@ -131,3 +131,47 @@
   font-style: italic;
   font-weight: 800;
 }
+
+/* ─── Responsive Utilities ──────────────────────────────────────────────────── */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure images don't overflow their containers */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 640px) {
+  button, a {
+    min-height: 36px;
+  }
+  
+  /* Ensure modals take full width on mobile */
+  .modal-content {
+    width: 100% !important;
+  }
+}
+
+/* Tablet breakpoint improvements */
+@media (min-width: 640px) and (max-width: 1024px) {
+  /* Tablet grid cols consistent behavior */
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Prevent horizontal overflow globally */
+body {
+  overflow-x: hidden;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}

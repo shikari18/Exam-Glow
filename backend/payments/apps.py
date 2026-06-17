@@ -6,7 +6,12 @@ class PaymentsConfig(AppConfig):
     name = 'payments'
 
     def ready(self):
-        """Register django-q scheduled tasks on startup."""
+        """Register django-q scheduled tasks after migrations via post_migrate signal."""
+        from django.db.models.signals import post_migrate
+        post_migrate.connect(self._create_schedules, sender=self)
+
+    def _create_schedules(self, sender, **kwargs):
+        """Create django-q scheduled tasks if they don't exist yet."""
         try:
             from django_q.models import Schedule
 

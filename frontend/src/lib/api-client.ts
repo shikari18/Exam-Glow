@@ -59,6 +59,18 @@ export type ApiError = {
   detail?: unknown;
 };
 
+async function readJsonOrText(res: Response): Promise<unknown> {
+  // IMPORTANT: a Response body can only be read once. We read text once and then
+  // attempt to JSON-parse it to avoid "body stream already read" errors.
+  const raw = await res.text();
+  if (!raw) return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
@@ -93,12 +105,7 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    let detail: unknown;
-    try {
-      detail = await res.json();
-    } catch {
-      detail = await res.text();
-    }
+    const detail = await readJsonOrText(res);
     const message =
       typeof detail === 'object' && detail !== null
         ? (detail as Record<string, unknown>).detail?.toString() ??

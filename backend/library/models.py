@@ -13,6 +13,8 @@ class Resource(models.Model):
     ]
     STATUS_CHOICES = [
         ('processing', 'Processing'),
+        ('vectorizing', 'Vectorizing'),
+        ('generating', 'Generating'),
         ('ready', 'Study Ready'),
         ('error', 'Error'),
     ]

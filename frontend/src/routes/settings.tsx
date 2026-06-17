@@ -32,6 +32,7 @@ function Settings() {
   const navigate = useNavigate();
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [voiceMood, setVoiceMood] = useState<string>("Aoede");
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" as any });
@@ -39,6 +40,7 @@ function Settings() {
 
   useEffect(() => {
     setSelectedSubjects(enrolledSubjects);
+    setVoiceMood(localStorage.getItem("examglow_voice") || "Aoede");
   }, [enrolledSubjects]);
 
   const toggle = (name: string) => {
@@ -56,7 +58,8 @@ function Settings() {
     try {
       await updateSubjects(selectedSubjects);
       await refresh();
-      toast.success("Subjects updated!");
+      localStorage.setItem("examglow_voice", voiceMood);
+      toast.success("Settings saved!");
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save");
     } finally {
@@ -93,6 +96,42 @@ function Settings() {
               <span className="text-foreground/60">Year Group</span>
               <span className="font-semibold">{yearGroup || "Not set"}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Voice Mood selection */}
+        <div className="bg-white border border-border rounded-2xl p-6 mb-6">
+          <h2 className="font-bold mb-1">AI Voice Mood</h2>
+          <p className="text-sm text-foreground/60 mb-4">
+            Select the voice mood for your AI summaries, live tutor, and study guides.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { id: "Aoede", label: "Aoede 🌸", desc: "Warm & Clear (F)" },
+              { id: "Kore", label: "Kore 🎀", desc: "Friendly & Sprightly (F)" },
+              { id: "Puck", label: "Puck 🎒", desc: "Energetic & Fun (M)" },
+              { id: "Fenrir", label: "Fenrir 🐺", desc: "Deep & Academic (M)" },
+              { id: "Charon", label: "Charon ⚓", desc: "Calm & Direct (M)" },
+            ].map((v) => {
+              const selected = voiceMood === v.id;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setVoiceMood(v.id)}
+                  className={`border rounded-xl px-3 py-2 text-left transition-all relative ${
+                    selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  {selected && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 text-white" />
+                    </span>
+                  )}
+                  <p className="font-semibold text-xs">{v.label}</p>
+                  <p className="text-[10px] text-foreground/50">{v.desc}</p>
+                </button>
+              );
+            })}
           </div>
         </div>
 

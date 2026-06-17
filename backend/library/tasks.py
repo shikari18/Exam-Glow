@@ -348,6 +348,7 @@ def process_resource_task(res_id):
                 # SELF-HEALING RETRY: If sections are empty but text is substantial, retry once
                 if not kit.get('sections') and len(text) > 1000:
                     logger.warning(f'[Task Queue] Empty sections detected for {res.id}. Retrying once with Recovery Signal...')
+                    res.refresh_from_db()
                     kit = ai.generate_study_kit(
                         res,
                         context=text + "\n\nCRITICAL FIX: Your previous JSON response for this material was malformed or empty. Please ensure you return a valid JSON object with detailed 'sections'.",
@@ -355,17 +356,24 @@ def process_resource_task(res_id):
                         vision_data=vision_data
                     )
 
+                has_summary = bool((kit.get('overview') or {}).get('summary'))
+                if not kit.get('sections') and not has_summary:
+                    raise RuntimeError('AI synthesis returned no sections and no summary.')
+
                 res.ai_notes_json = kit
-                res.has_study_kit = True
+                res.has_study_kit = bool(kit.get('sections'))
                 res.processing_progress = 100
                 res.status_text = "Polishing complete!"
                 if not res.ai_summary:
                     res.ai_summary = kit.get('overview', {}).get('summary', '')[:1000]
             except Exception as e:
                 logger.exception(f'[Task Queue] AI Study kit failed for {res.id}: {e}')
-                # Don't fail the whole task if just the kit fails, but mark status
-                res.status = 'ready' # Still ready to use even without high-end kit
-                res.save()
+                res.status = 'error'
+                res.processing_progress = 100
+                res.status_text = "❌ AI processing failed. Tap reprocess to try again."
+                if not res.ai_summary and text:
+                    res.ai_summary = text[:1000]
+                res.save(update_fields=['status', 'processing_progress', 'status_text', 'ai_summary'])
                 return
 
         res.status = 'ready'

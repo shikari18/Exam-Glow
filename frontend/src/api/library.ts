@@ -6,7 +6,7 @@
  */
 import { api, apiFetch, apiList, API_BASE, getAccessToken } from '@/lib/api-client';
 
-export type ResourceStatus = 'processing' | 'ready' | 'error';
+export type ResourceStatus = 'processing' | 'vectorizing' | 'generating' | 'ready' | 'error';
 export type ResourceType = 'pdf' | 'video' | 'code' | 'slides' | 'other';
 
 export type Resource = {
@@ -81,8 +81,12 @@ export async function uploadResource(data: {
   });
 
   if (!res.ok) {
-    let detail: unknown;
-    try { detail = await res.json(); } catch { detail = await res.text(); }
+    // IMPORTANT: a Response body can only be read once. Read text once, then try JSON parse.
+    const raw = await res.text();
+    let detail: unknown = raw;
+    if (raw) {
+      try { detail = JSON.parse(raw); } catch { /* keep as text */ }
+    }
     const message = typeof detail === 'object' && detail !== null
       ? (detail as any).error ?? (detail as any).detail ?? `Upload failed (${res.status})`
       : String(detail) || `Upload failed (${res.status})`;

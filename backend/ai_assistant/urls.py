@@ -7,7 +7,7 @@ from .views import (
     MindMapView, PracticeQuestionsView, ChapterSummariesView,
     SaveContentView, GradeAnswerView,
     VisionMessageView, GenerateDiagramView, GenerateImageView,
-    AgentView, AgentStreamView, AgentAudioView,
+    AgentView, AgentStreamView, AgentAudioView, GenerateTopicNotesView,
 )
 from .exam_prep import ExamPrepView
 
@@ -16,6 +16,7 @@ from .views_podcast import (
 )
 
 urlpatterns = [
+    path('generate-notes/', GenerateTopicNotesView.as_view(), name='generate-notes'),
     path('agent/', AgentView.as_view(), name='platform_agent'),
     path('agent/stream/', AgentStreamView.as_view(), name='platform_agent_stream'),
     path('agent/audio/', AgentAudioView.as_view(), name='agent_audio'),

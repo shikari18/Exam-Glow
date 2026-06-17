@@ -43,6 +43,7 @@ function QuestionCard({
   index: number;
 }) {
   const [showSolution, setShowSolution] = useState(false);
+  const [userAnswer, setUserAnswer] = useState("");
 
   return (
     <div className="rounded-2xl border border-border bg-white overflow-hidden">
@@ -70,10 +71,14 @@ function QuestionCard({
           {question.question}
         </p>
 
-        {/* Answer space hint */}
-        <div className="mt-4 rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 text-xs text-foreground/40 italic">
-          Write your answer here before revealing the worked solution…
-        </div>
+        {/* Answer space input */}
+        <textarea
+          value={userAnswer}
+          onChange={(e) => setUserAnswer(e.target.value)}
+          placeholder="Write your answer here…"
+          rows={3}
+          className="mt-4 w-full border border-border rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 bg-muted/20 placeholder:text-foreground/40"
+        />
       </div>
 
       {/* Toggle worked solution */}

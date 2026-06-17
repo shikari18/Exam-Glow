@@ -327,7 +327,17 @@ class AIService:
         Hyper-Resilient Chat — optimised for SPEED (conversational use).
         Chain: Groq (1000 t/s) → SambaNova (12K RPD) → Cerebras (14.4K RPD) → Google Gemma 4 → OpenRouter
         """
-        if not self.api_key: return "API Key missing."
+        # NOTE: OpenRouter is optional. We can still run via Groq/SambaNova/Cerebras/Google
+        # as long as at least one provider key is configured.
+        has_any_provider = bool(
+            self._groq_keys()
+            or os.getenv('SAMBANOVA_API_KEY')
+            or os.getenv('CEREBRAS_API_KEY')
+            or self._google_clients()
+            or self.api_key
+        )
+        if not has_any_provider:
+            return "No AI provider API keys configured."
         
         messages = self._sanitize_messages(messages)
         target_model = forced_model or target_model or self.model
@@ -605,6 +615,30 @@ class AIService:
                     logger.warning(f"[Google SDK Kit] {g_model} timed out")
                 except Exception as e:
                     logger.warning(f"[Google SDK Kit] {g_model} failed: {e}")
+
+        # ── STAGE 4: OPENROUTER — important fallback for deployed key setups ─
+        if self.api_key:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        f'{self.base_url}/chat/completions',
+                        headers=self.headers,
+                        json={
+                            'model': self.model or 'openrouter/auto',
+                            'messages': messages,
+                            'max_tokens': min(max_tokens, 4096),
+                        },
+                        timeout=45,
+                    )
+                    if response.status_code == 200:
+                        result = self._extract_content(response.json())
+                        if result and result.strip():
+                            logger.info(f"[OpenRouter Kit] ✓ {self.model or 'openrouter/auto'}")
+                            return result
+                    else:
+                        logger.warning(f"[OpenRouter Kit] {response.status_code}: {response.text[:300]}")
+            except Exception as e:
+                logger.warning(f"[OpenRouter Kit] failed: {e}")
 
         logger.error("[Kit Chat Final Failure]: All engines exhausted.")
         return ""
@@ -1458,8 +1492,8 @@ class AIService:
 
         # ─── MACRO-CHUNKING (Hyper-Speed Mode) ───
         # 15K chunks — balances context quality vs token budget for response
-        chunk_size = 15000
-        overlap = 500
+        chunk_size = 6000
+        overlap = 400
         chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size - overlap)]
 
         # [NEW] Multi-Modal Vision Context
@@ -1729,7 +1763,8 @@ class AIService:
             
         # Study kit uses kit_chat_sync (Cerebras → SambaNova → Groq 70B → Google)
         # for quality + high daily quota. Falls back to chat_sync if kit_chat returns empty.
-        future = watchdog.submit(self.kit_chat_sync, [{'role': 'user', 'content': user_content}], max_tokens=16384)
+        messages = [{'role': 'user', 'content': user_content}]
+        future = watchdog.submit(self.kit_chat_sync, messages, max_tokens=8192)
         try:
             # [IMPERIAL SCALE] Upgraded timeout to 500s for 20-section depth
             res = future.result(timeout=500)
@@ -1738,6 +1773,13 @@ class AIService:
             # Diagnostic Logging for 0-section bug
             if not res or (isinstance(res, str) and len(res) < 50):
                 logger.error(f"[AI Service] Chunk {idx+1} returned EMPTY or suspicious response: {res}")
+                try:
+                    fallback_res = self.chat_sync(messages, max_tokens=4096, timeout=45)
+                    if fallback_res and len(fallback_res.strip()) >= 50:
+                        logger.info(f"[AI Service] Chunk {idx+1} recovered via chat_sync fallback.")
+                        return fallback_res
+                except Exception as fallback_err:
+                    logger.warning(f"[AI Service] Chunk {idx+1} fallback failed: {fallback_err}")
             
             return res
         except TimeoutError:

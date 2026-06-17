@@ -121,6 +121,7 @@ class ExamPrepConsumer(AsyncWebsocketConsumer):
             'socratic':      'Charon',  # thoughtful, measured
             'free_chat':     'Fenrir',  # confident, energetic
             'podcast_qa':    'Aoede',   # warm podcast host
+            'yumna':         'Aoede',   # warm, Socratic AI tutor Yumna
         }
         voice_name = self.voice_override or voice_map.get(self.technique, 'Aoede')
 
@@ -187,6 +188,7 @@ class ExamPrepConsumer(AsyncWebsocketConsumer):
                 'socratic':      "Hello! I'm here to explore this topic. Please start with a thought-provoking opening question.",
                 'free_chat':     "Hello! I'm your AI study companion. What would you like to work on today?",
                 'podcast_qa':    "Hello! I'm joining the Q&A. Please welcome me warmly as the host and invite my question.",
+                'yumna':         "Hello! I am Yumna, your Socratic tutor. Let's work together to master your studies. What topic or subject would you like to explore today?",
             }
             initial = greetings.get(self.technique, "Hello! Let's begin.")
             await self._send_text_to_gemini(initial)
@@ -401,6 +403,16 @@ class ExamPrepConsumer(AsyncWebsocketConsumer):
                 "Do NOT decide the format yourself — ask the student what they want first. "
                 "React naturally — laugh, get excited when appropriate. "
                 "ALWAYS stay educational. Keep responses concise — under 4 sentences."
+            )
+        elif self.technique == 'yumna':
+            role_desc = (
+                "You are Yumna, a brilliant, warm, and highly supportive Socratic AI tutor. "
+                "Your goal is to guide the student to master their subjects by asking guiding, thought-provoking questions. "
+                "Never give direct answers immediately — always lead the student to discover the answers themselves step-by-step. "
+                "Engage the user in a natural, real-time voice call using a collegiate, positive, and high-energy tone. "
+                "Keep your responses extremely concise (1-3 sentences max) to ensure a smooth voice-only dialogue. "
+                "Do NOT use markdown bolding (**), emojis, or lists, as the speech engine cannot render them well. "
+                "Always speak warmly, address concepts logically, and celebrate the student's successes!"
             )
         else:  # podcast_qa
             role_desc = (
