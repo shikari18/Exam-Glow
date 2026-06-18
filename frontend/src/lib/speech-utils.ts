@@ -1,4 +1,4 @@
-import { speakGemini, type GeminiSpeechHandle } from "./gemini-speech";
+import { speakGemini, prepareGeminiSpeech, type GeminiSpeechHandle, type PreparedSpeech } from "./gemini-speech";
 
 export type SpeechTurn = {
   text: string;
@@ -79,12 +79,15 @@ export function speakSingleTurn(
   text: string,
   gender: "male" | "female",
   onStart: () => void,
-  onDone: () => void
+  onDone: () => void,
+  prepared?: PreparedSpeech
 ): SpeechController {
   stopAllSpeech();
 
   const sanitized = sanitizeTextForTTS(text);
-  const geminiVoice = gender === "male" ? "Fenrir" : "Aoede";
+  const geminiVoice = gender === "male" 
+    ? "Fenrir" 
+    : (typeof localStorage !== "undefined" ? localStorage.getItem("examglow_voice") : null) || "Aoede";
   const apiKey = import.meta.env.VITE_GEMINI_VOICE_API_KEY || "";
 
   let hasEnded = false;
@@ -110,7 +113,7 @@ export function speakSingleTurn(
           // Trigger fallback on error
           speakBrowserFallback(sanitized, gender, finish);
         }
-      });
+      }, prepared);
 
       return {
         stop: () => {
@@ -182,15 +185,53 @@ export function playSpeechConversation(
   
   let currentTurnIndex = 0;
   let activeController: SpeechController | null = null;
+  const apiKey = import.meta.env.VITE_GEMINI_VOICE_API_KEY || "";
+
+  // A list of pre-connected speech sockets matching indices
+  const preConnectedList: (PreparedSpeech | null)[] = new Array(turns.length).fill(null);
+
+  // Helper to preconnect a turn
+  const preConnectTurn = (idx: number) => {
+    if (!apiKey || idx >= turns.length || preConnectedList[idx]) return;
+    const turn = turns[idx];
+    const voice = turn.gender === "male" 
+      ? "Fenrir" 
+      : (typeof localStorage !== "undefined" ? localStorage.getItem("examglow_voice") : null) || "Aoede";
+    try {
+      preConnectedList[idx] = prepareGeminiSpeech(voice);
+    } catch (e) {
+      console.error("Failed to preconnect turn", idx, e);
+    }
+  };
+
+  // Preconnect first two turns
+  preConnectTurn(0);
+  preConnectTurn(1);
 
   const speakNext = () => {
     if (currentTurnIndex >= turns.length) {
+      // Clean up any unused sockets
+      preConnectedList.forEach(p => {
+        if (p) {
+          try { p.ws.close(); } catch {}
+          try { p.audioCtx.close(); } catch {}
+        }
+      });
       onComplete();
       return;
     }
 
     const turn = turns[currentTurnIndex];
     onTurnStart(currentTurnIndex);
+
+    // Get the pre-connected speech structure for this turn (if any)
+    const prepared = preConnectedList[currentTurnIndex] || undefined;
+    if (prepared) {
+      preConnectedList[currentTurnIndex] = null; // consume it
+    }
+
+    // Preconnect next turn (current + 2) in background
+    preConnectTurn(currentTurnIndex + 2);
 
     activeController = speakSingleTurn(
       turn.text,
@@ -199,7 +240,8 @@ export function playSpeechConversation(
       () => {
         currentTurnIndex++;
         speakNext();
-      }
+      },
+      prepared
     );
   };
 
@@ -212,6 +254,13 @@ export function playSpeechConversation(
         activeController.stop();
       }
       stopAllSpeech();
+      // Close all preconnected sockets
+      preConnectedList.forEach(p => {
+        if (p) {
+          try { p.ws.close(); } catch {}
+          try { p.audioCtx.close(); } catch {}
+        }
+      });
       onComplete();
     }
   };

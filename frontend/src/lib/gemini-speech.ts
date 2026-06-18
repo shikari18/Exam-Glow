@@ -89,54 +89,29 @@ function schedulePlaybackChunk(ctx: AudioContext, chunk: Int16Array) {
   };
 }
 
-/**
- * Speaks a block of text using Gemini Live Audio.
- * Only one active speech is supported at a time; calling speakGemini cancels the previous one.
- */
-export function speakGemini(text: string, opts: SpeakOptions = {}): GeminiSpeechHandle {
-  stopCurrent();
+export type PreparedSpeech = {
+  ws: WebSocket;
+  audioCtx: AudioContext;
+  voiceName: string;
+  setupDone: boolean;
+  onSetupComplete?: () => void;
+};
 
-  const voiceName = opts.voiceName || (typeof localStorage !== "undefined" ? localStorage.getItem("examglow_voice") : null) || "Aoede";
-  const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_VOICE_API_KEY}`;
+/**
+ * Preconnects a Gemini speech WebSocket connection to prepare for instant playback
+ */
+export function prepareGeminiSpeech(voiceName: string): PreparedSpeech {
+  const apiKey = import.meta.env.VITE_GEMINI_VOICE_API_KEY || "";
+  const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
   const ws = new WebSocket(wsUrl);
   const audioCtx = new AudioContext();
 
-  current = {
+  const prepared: PreparedSpeech = {
     ws,
     audioCtx,
-    activeSources: [],
-    nextPlaybackTime: 0,
-  };
-
-  let setupDone = false;
-  let turnComplete = false;
-
-  const sendPrompt = () => {
-    if (!current?.ws || current.ws.readyState !== WebSocket.OPEN) return;
-
-    // Ask the model to output only speech audio for the provided text.
-    current.ws.send(
-      JSON.stringify({
-        clientContent: {
-          turns: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text:
-                    "Read the following text aloud naturally. Do not add extra words. " +
-                    "If the text contains markdown, ignore the markdown symbols and read it as normal speech.\n\n" +
-                    text,
-                },
-              ],
-            },
-          ],
-          turnComplete: true,
-        },
-      }),
-    );
-    opts.onStart?.();
+    voiceName,
+    setupDone: false
   };
 
   ws.onopen = () => {
@@ -172,6 +147,124 @@ export function speakGemini(text: string, opts: SpeakOptions = {}): GeminiSpeech
       } else {
         data = JSON.parse(event.data);
       }
+      if (data.setupComplete) {
+        prepared.setupDone = true;
+        prepared.onSetupComplete?.();
+      }
+    } catch (e) {
+      // ignore setup check errors
+    }
+  };
+
+  return prepared;
+}
+
+/**
+ * Speaks a block of text using Gemini Live Audio.
+ * Only one active speech is supported at a time; calling speakGemini cancels the previous one.
+ */
+export function speakGemini(
+  text: string,
+  opts: SpeakOptions = {},
+  prepared?: PreparedSpeech
+): GeminiSpeechHandle {
+  stopCurrent();
+
+  const voiceName = opts.voiceName || (typeof localStorage !== "undefined" ? localStorage.getItem("examglow_voice") : null) || "Aoede";
+  const apiKey = import.meta.env.VITE_GEMINI_VOICE_API_KEY || "";
+
+  let ws: WebSocket;
+  let audioCtx: AudioContext;
+
+  if (prepared) {
+    ws = prepared.ws;
+    audioCtx = prepared.audioCtx;
+  } else {
+    const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+    ws = new WebSocket(wsUrl);
+    audioCtx = new AudioContext();
+  }
+
+  current = {
+    ws,
+    audioCtx,
+    activeSources: [],
+    nextPlaybackTime: 0,
+  };
+
+  let setupDone = prepared ? prepared.setupDone : false;
+  let turnComplete = false;
+
+  const sendPrompt = () => {
+    if (!current?.ws || current.ws.readyState !== WebSocket.OPEN) return;
+
+    current.ws.send(
+      JSON.stringify({
+        clientContent: {
+          turns: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text:
+                    "Read the following text aloud naturally. Do not add extra words. " +
+                    "If the text contains markdown, ignore the markdown symbols and read it as normal speech.\n\n" +
+                    text,
+                },
+              ],
+            },
+          ],
+          turnComplete: true,
+        },
+      }),
+    );
+    opts.onStart?.();
+  };
+
+  if (setupDone) {
+    sendPrompt();
+  } else {
+    if (prepared) {
+      prepared.onSetupComplete = () => {
+        setupDone = true;
+        sendPrompt();
+      };
+    } else {
+      ws.onopen = () => {
+        ws.send(
+          JSON.stringify({
+            setup: {
+              model: "models/gemini-2.5-flash-native-audio-latest",
+              generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: {
+                  voiceConfig: { prebuiltVoiceConfig: { voiceName } },
+                },
+              },
+              systemInstruction: {
+                parts: [
+                  {
+                    text:
+                      "You are a text-to-speech engine. Output audio only. " +
+                      "Do not include any additional commentary or formatting.",
+                  },
+                ],
+              },
+            },
+          }),
+        );
+      };
+    }
+  }
+
+  ws.onmessage = async (event) => {
+    try {
+      let data: any;
+      if (event.data instanceof Blob) {
+        data = JSON.parse(await event.data.text());
+      } else {
+        data = JSON.parse(event.data);
+      }
 
       if (data.setupComplete && !setupDone) {
         setupDone = true;
@@ -193,7 +286,6 @@ export function speakGemini(text: string, opts: SpeakOptions = {}): GeminiSpeech
         turnComplete = true;
       }
 
-      // End condition: server finished AND all queued audio has played
       if (turnComplete && (current?.activeSources?.length ?? 0) === 0) {
         opts.onDone?.();
         stopCurrent();
@@ -210,9 +302,7 @@ export function speakGemini(text: string, opts: SpeakOptions = {}): GeminiSpeech
   };
 
   ws.onclose = () => {
-    // If it closes early, treat as done only if we were already playing/finished.
     if (current) {
-      // Keep it simple: if closed, stop everything.
       opts.onDone?.();
       stopCurrent();
     }

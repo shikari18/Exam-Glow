@@ -619,223 +619,201 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
     }
   };
 
-  // ── Teach Me This Page audio readout simulator ──
-  const handleTeachMe = () => {
-    setAudioState("speaking");
-    setSpeakingTurnIndex(null);
-
+  // ── Teach Me This Page audio readout ──
+  const handleTeachMe = async () => {
     // Stop active speech first
     if (audioControllerRef.current) {
       audioControllerRef.current.stop();
       audioControllerRef.current = null;
     }
+    setAudioState("idle");
+    setSpeakingTurnIndex(null);
 
     const clean = cleanSubjectName(subjectName);
-    let explanationText = "";
+    const activePageTitle = getPageTitle(currentPage);
+    const aims = getCategoryAims().join("\n* ");
+    const objs = getObjectivesForPage(currentPage - 8);
 
+    let contentSummary = "";
     if (currentPage === 1) {
-      explanationText = `Welcome to the official syllabus cover page for IGCSE ${clean} (${subjectCode}). This syllabus is designed for exams in the current period. It establishes the global curriculum standards, ensuring students develop key competencies, theoretical knowledge, and practical skills. In simple terms, this page serves as the entry gateway to the entire subject curriculum, detailing exams and versions.`;
+      contentSummary = `Subject: ${clean}, Code: ${subjectCode}, Years: ${yearRange}, Cover Page.`;
     } else if (currentPage === 2) {
-      explanationText = `This page explains the core educational philosophy of Cambridge International and why this syllabus is so valuable. It outlines the 'Cambridge Pathway' and highlights the five critical qualities of a successful learner: being confident, responsible, reflective, innovative, and engaged. It also references Duke University's endorsement that the Cambridge curriculum is superb preparation for higher studies, certified under global quality standards.`;
+      contentSummary = `Philosophy, pathway, and Cambridge Learner Attributes: confident, responsible, reflective, innovative, engaged. Duke University endorsement of rigour.`;
     } else if (currentPage === 3) {
-      explanationText = `Here we have the official Table of Contents, mapping out the entire structured guide of the syllabus. It links the primary components, starting with the educational aims, the assessment structure, and the exact subject content. Click any item on this page to jump straight to its location in the document.`;
+      contentSummary = `Table of Contents. Chapters: ${objectives.map(o => `Chapter ${o.code}: ${o.title}`).join(", ")}.`;
     } else if (currentPage === 4) {
-      explanationText = `This section details the formal Aims of the syllabus. For ${clean}, the aims focus on cultivating deep subject interest, building analytical capabilities, encouraging logical reasoning, and providing a solid platform for further academic or career progression. It also outlines the two key Assessment Objectives: AO1, which is Knowledge and understanding, and AO2, which is Analysis, interpretation and communication.`;
+      contentSummary = `Educational Aims:\n* ${aims}`;
     } else if (currentPage === 5) {
-      explanationText = `This is the Content Overview. It lists the main pillars of the curriculum. In this subject, you will study key modules. For ${clean}, these include fundamental principles, detailed investigations, and core methodologies. Mastering these areas will ensure full exam readiness.`;
+      contentSummary = `Curriculum Content Overview. Chapters:\n${objectives.map(o => `* Chapter ${o.code}: ${o.title} - ${o.description}`).join("\n")}`;
     } else if (currentPage === 6) {
-      explanationText = `Let's look at the Details of the Assessment. The exam structure is tiered to support different pathways. In this subject, you will take components such as Paper 1 and Paper 2, or theory, practical, and multiple-choice papers. It lists mark distributions, timing bounds, and percentage weightings, which determine how much each paper contributes to your final grade.`;
+      contentSummary = `Details of the Assessment: tiered paper structure, core vs extended, durations, marks, and percentage weightings.`;
     } else if (currentPage === 7) {
-      explanationText = `This page outlines the Assessment Objectives (AOs) and how they are weighted across different components. It details what percentage of the exam grades are allocated to recall of factual knowledge, handling data/problem-solving, and practical investigative skills. You should align your revision with these weightings to maximize your score.`;
+      contentSummary = `Assessment Objectives: AO1 (Knowledge with understanding), AO2 (Handling information and problem solving), AO3 (Experimental skills and investigation) if applicable, and weightings.`;
     } else if (currentPage >= 8 && currentPage <= 13) {
-      const pageIdx = currentPage - 8;
-      const pageObjs = getObjectivesForPage(pageIdx);
-      if (pageObjs.length > 0) {
-        const titles = pageObjs.map(o => `Chapter ${o.code}: ${o.title}`).join(", ");
-        const details = pageObjs.map(o => `${o.title} covers ${o.description}. Sub-topics include: ${o.subObjectives?.map((so: any) => so.title).join(", ")}.`).join(" ");
-        explanationText = `This is a Subject Content Guide page, detailing: ${titles}. Let's break it down in simple terms: ${details} In exams, questions will test your understanding of these specific learning outcomes, so be sure to understand the vocabulary, key concepts, and practical applications.`;
+      if (objs.length > 0) {
+        contentSummary = `Subject Content Guide:\n${objs.map(o => `Chapter ${o.code}: ${o.title}\nDescription: ${o.description}\nSub-topics:\n${o.subObjectives?.map(so => `- ${so.code} ${so.title}: ${so.description}`).join("\n")}`).join("\n\n")}`;
       } else {
-        explanationText = `This page outlines standard core curriculum review points, mathematical conventions, or vocabulary references for IGCSE ${clean}. It is designed to reinforce your basic study skills and ensure you follow formatting rules in the exam.`;
+        contentSummary = `Syllabus Review and Conventions: Command words (explain, describe, calculate, estimate), units, mathematical conventions, and three significant figures rules.`;
       }
-    } else {
-      explanationText = `This is a review and summary section of the syllabus content guide. It covers essential formula lists, standard mathematical conventions, key command words, and exam vocabulary definitions. Understanding these core details will ensure you write accurate answers and avoid losing marks in final assessments.`;
     }
 
-    setMessages(prev => [
-      ...prev,
-      { role: "assistant", text: `🌸 **AI Tutor Lesson (Page ${currentPage})**:\n\n${explanationText}` }
-    ]);
     setAiChatOpen(true);
+    setIsTyping(true);
 
-    audioControllerRef.current = speakSingleTurn(
-      explanationText,
-      "male", // Male voice as requested
-      () => {},
-      () => {
-        setAudioState("idle");
-      }
-    );
+    try {
+      const prompt = `You are a warm, expert IGCSE tutor teaching a student the syllabus details. Please generate a highly comprehensive, detailed, and thorough explanation covering everything on Page ${currentPage} ("${activePageTitle}") of the IGCSE ${clean} (${subjectCode}) syllabus.
+Here is the context of this page:
+${contentSummary}
+
+Write a detailed, thorough explanation teaching every single term, concept, exam structure, aim, or sub-objective on this page. Cover all details and provide examples where relevant. Make the explanation long, comprehensive, and complete (not a brief summary). Avoid headers or bullet points. Start speaking immediately without intro filler.`;
+
+      const data = await apiFetch<{ answer: string }>("/api/ai/ask/", {
+        method: "POST",
+        body: JSON.stringify({ question: prompt })
+      });
+
+      const explanationText = data.answer.trim();
+      setIsTyping(false);
+      
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", text: `🌸 **AI Tutor Lesson (Page ${currentPage})**:\n\n${explanationText}` }
+      ]);
+
+      setAudioState("speaking");
+      audioControllerRef.current = speakSingleTurn(
+        explanationText,
+        "male", // Male voice (maps to Fenrir deep voice)
+        () => {},
+        () => {
+          setAudioState("idle");
+        }
+      );
+    } catch (err) {
+      console.error("Teach Me generation failed", err);
+      setIsTyping(false);
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", text: "Sorry, I had trouble reaching the AI tutor to generate a custom lesson. Please check your connection." }
+      ]);
+    }
   };
 
   // ── AI Debate Battle Turn Generator ──
-  const handleAiBattle = () => {
-    setAudioState("debate");
-
+  const handleAiBattle = async () => {
+    // Stop active speech first
     if (audioControllerRef.current) {
       audioControllerRef.current.stop();
       audioControllerRef.current = null;
     }
+    setAudioState("idle");
+    setSpeakingTurnIndex(null);
 
-    let turns: SpeechTurn[] = [];
+    const clean = cleanSubjectName(subjectName);
+    const activePageTitle = getPageTitle(currentPage);
+    const aims = getCategoryAims().join("\n* ");
+    const objs = getObjectivesForPage(currentPage - 8);
 
-    if (currentPage <= 3) {
-      turns = [
-        {
-          speaker: "Dr. AI Smith",
-          gender: "male",
-          text: `Welcome, Prof. Jones! Today we are looking at the introductory pages of the IGCSE ${cleanName} syllabus, subject code ${subjectCode}. Don't you agree that a clear, structured overview is the most critical starting point for any student?`
-        },
-        {
-          speaker: "Prof. AI Jones",
-          gender: "female",
-          text: `Absolutely, Dr. Smith. However, students often overlook these first pages. But they establish the critical foundation, explaining the educational pathway and the qualities like being reflective and innovative that examiners look for!`
-        },
-        {
-          speaker: "Dr. AI Smith",
-          gender: "male",
-          text: `Indeed. For instance, the Duke University citation shows that university admissions value the academic rigor of this curriculum. It's not just about memorizing facts; it's about building long-term academic skills.`
-        },
-        {
-          speaker: "Prof. AI Jones",
-          gender: "female",
-          text: `Exactly. It sets up the study habits required for university. Let's encourage our students to read this carefully before they jump straight into solving past papers.`
-        }
-      ];
-    } else if (currentPage === 4 || currentPage === 5 || currentPage === 7) {
-      turns = [
-        {
-          speaker: "Dr. AI Smith",
-          gender: "male",
-          text: `Prof. Jones, let's discuss the Syllabus Aims and Assessment Objectives. AO1 focuses on pure knowledge, while AO2 is about analysis. Which one do you think students find more challenging?`
-        },
-        {
-          speaker: "Prof. AI Jones",
-          gender: "female",
-          text: `In my experience, Dr. Smith, students struggle with AO2: Analysis and Communication. Recalling definitions is relatively easy, but applying concepts to new scenarios and communicating the reasoning clearly is where they lose marks.`
-        },
-        {
-          speaker: "Dr. AI Smith",
-          gender: "male",
-          text: `I agree. In the exam, candidates must construct logical arguments, explain their working step-by-step, and use correct notation. We must emphasize structured reasoning in our lessons.`
-        },
-        {
-          speaker: "Prof. AI Jones",
-          gender: "female",
-          text: `Precisely! Practice is the key. They must practice articulating the 'why' behind each step, not just calculating the final answer.`
-        }
-      ];
+    let contentSummary = "";
+    if (currentPage === 1) {
+      contentSummary = `Subject: ${clean}, Code: ${subjectCode}, Years: ${yearRange}, Cover Page.`;
+    } else if (currentPage === 2) {
+      contentSummary = `Philosophy, pathway, and Cambridge Learner Attributes: confident, responsible, reflective, innovative, engaged. Duke University endorsement of rigour.`;
+    } else if (currentPage === 3) {
+      contentSummary = `Table of Contents. Chapters: ${objectives.map(o => `Chapter ${o.code}: ${o.title}`).join(", ")}.`;
+    } else if (currentPage === 4) {
+      contentSummary = `Educational Aims:\n* ${aims}`;
+    } else if (currentPage === 5) {
+      contentSummary = `Curriculum Content Overview. Chapters:\n${objectives.map(o => `* Chapter ${o.code}: ${o.title} - ${o.description}`).join("\n")}`;
     } else if (currentPage === 6) {
-      turns = [
-        {
-          speaker: "Dr. AI Smith",
-          gender: "male",
-          text: `Ah, look at the Assessment Overview page! The tiered paper structure, core versus extended, is fascinating. Prof. Jones, why do you think they split the exams this way?`
-        },
-        {
-          speaker: "Prof. AI Jones",
-          gender: "female",
-          text: `It's all about appropriate differentiation, Dr. Smith. Core papers test the basic curriculum, while Extended papers include the full syllabus. It allows every candidate to show what they truly know and can achieve.`
-        },
-        {
-          speaker: "Dr. AI Smith",
-          gender: "male",
-          text: `True. But we must warn students: paper timing is tight! For example, writing a two-hour paper with 100 marks requires fast-paced thinking and excellent time management.`
-        },
-        {
-          speaker: "Prof. AI Jones",
-          gender: "female",
-          text: `Very true. Managing your time, skipping tough questions to come back later, and bringing a fully functional calculator where allowed are key tactics for success on exam day.`
-        }
-      ];
-    } else {
-      const pageIdx = currentPage - 8;
-      const pageObjs = getObjectivesForPage(pageIdx);
-      if (pageObjs.length > 0) {
-        const mainObj = pageObjs[0];
-        const subList = mainObj.subObjectives?.map(so => so.title).slice(0, 3).join(", ") || "";
-        turns = [
-          {
-            speaker: "Dr. AI Smith",
-            gender: "male",
-            text: `Let's discuss the core objectives on this page, specifically Chapter ${mainObj.code}: ${mainObj.title}. Prof. Jones, how do you help students grasp the core concepts of this chapter, such as ${subList}?`
-          },
-          {
-            speaker: "Prof. AI Jones",
-            gender: "female",
-            text: `Dr. Smith, I always relate it to practical, real-world examples first. For instance, in ${mainObj.title}, we look at how these principles are applied in industry or daily life, which helps them remember the concepts.`
-          },
-          {
-            speaker: "Dr. AI Smith",
-            gender: "male",
-            text: `That makes sense. But the exam syllabus has very specific requirements and limits. Students must know what is excluded as well so they don't waste time studying unnecessary material.`
-          },
-          {
-            speaker: "Prof. AI Jones",
-            gender: "female",
-            text: `Quite right. Following the syllabus guidelines exactly, testing ourselves on each sub-topic, and focusing on the exact command words like explain, describe, or calculate is the best way to earn full marks.`
-          }
-        ];
+      contentSummary = `Details of the Assessment: tiered paper structure, core vs extended, durations, marks, and percentage weightings.`;
+    } else if (currentPage === 7) {
+      contentSummary = `Assessment Objectives: AO1 (Knowledge with understanding), AO2 (Handling information and problem solving), AO3 (Experimental skills and investigation) if applicable, and weightings.`;
+    } else if (currentPage >= 8 && currentPage <= 13) {
+      if (objs.length > 0) {
+        contentSummary = `Subject Content Guide:\n${objs.map(o => `Chapter ${o.code}: ${o.title}\nDescription: ${o.description}\nSub-topics:\n${o.subObjectives?.map(so => `- ${so.code} ${so.title}: ${so.description}`).join("\n")}`).join("\n\n")}`;
       } else {
-        turns = [
-          {
-            speaker: "Dr. AI Smith",
-            gender: "male",
-            text: `Let's look at these final syllabus summary tables, formula lists, and mathematical conventions. Some students think formulas are just to be memorized, but understanding how to apply them is what matters.`
-          },
-          {
-            speaker: "Prof. AI Jones",
-            gender: "female",
-            text: `Spot on, Dr. Smith. A formula is just a tool. If you don't know when or why to use it, it's useless. Examiners test the application of formulas in multi-step problems.`
-          },
-          {
-            speaker: "Dr. AI Smith",
-            gender: "male",
-            text: `And command words are crucial too. If a question says estimate, a student who calculates it exactly might actually lose marks or waste time. They must follow the command verbs exactly.`
-          },
-          {
-            speaker: "Prof. AI Jones",
-            gender: "female",
-            text: `Exactly. Paying attention to details like command words, units, and rounding conventions is what separates an A star student from the rest. Let's study these conventions carefully.`
-          }
-        ];
+        contentSummary = `Syllabus Review and Conventions: Command words (explain, describe, calculate, estimate), units, mathematical conventions, and three significant figures rules.`;
       }
     }
 
-    setMessages(prev => [
-      ...prev,
-      { role: "assistant", text: `⚔️ **AI Debate Battle (Page ${currentPage})**:\n*A friendly academic debate between Dr. Smith (Academic/Theory) and Prof. Jones (Applied/Practice) has started!*` }
-    ]);
     setAiChatOpen(true);
+    setIsTyping(true);
 
-    audioControllerRef.current = playSpeechConversation(
-      turns,
-      (idx) => {
-        setSpeakingTurnIndex(idx);
-        const turn = turns[idx];
-        setMessages(prev => [
-          ...prev,
-          { 
-            role: turn.gender === "male" ? "smith" : "jones", 
-            text: turn.text,
-            speaker: turn.speaker 
-          }
-        ]);
-      },
-      () => {
-        setAudioState("idle");
-        setSpeakingTurnIndex(null);
+    try {
+      const prompt = `You are a script writer. Write a turn-by-turn academic debate script between Dr. AI Smith (academic, theoretical, male) and Prof. AI Jones (practical, application-focused, female) discussing the concepts on Page ${currentPage} ("${activePageTitle}") of the IGCSE ${clean} (${subjectCode}) syllabus.
+Here is the context of this page:
+${contentSummary}
+
+Write exactly 4 turns, alternating between Dr. AI Smith (male) and Prof. AI Jones (female), starting with Dr. AI Smith. Make their arguments professional, educational, and engaging.
+Return ONLY a valid JSON array matching this exact schema, without any backticks, markdown, or text outside the JSON block:
+[
+  { "speaker": "Dr. AI Smith", "gender": "male", "text": "turn text" },
+  { "speaker": "Prof. AI Jones", "gender": "female", "text": "turn text" },
+  { "speaker": "Dr. AI Smith", "gender": "male", "text": "turn text" },
+  { "speaker": "Prof. AI Jones", "gender": "female", "text": "turn text" }
+]`;
+
+      const data = await apiFetch<{ answer: string }>("/api/ai/ask/", {
+        method: "POST",
+        body: JSON.stringify({ question: prompt })
+      });
+
+      setIsTyping(false);
+
+      // Clean up markdown code block fences if any
+      let rawJson = data.answer.trim();
+      if (rawJson.startsWith("```")) {
+        rawJson = rawJson.replace(/^```(json)?/, "").replace(/```$/, "").trim();
       }
-    );
+
+      let turns: SpeechTurn[];
+      try {
+        turns = JSON.parse(rawJson);
+      } catch (e) {
+        console.warn("AI returned invalid JSON array for debate, parsing as text turns", e);
+        const paragraphs = rawJson.split("\n\n").filter(p => p.trim());
+        turns = paragraphs.map((p, i) => ({
+          speaker: i % 2 === 0 ? "Dr. AI Smith" : "Prof. AI Jones",
+          gender: i % 2 === 0 ? "male" : "female",
+          text: p.replace(/^(Dr\.\s*Smith|Prof\.\s*Jones|Dr\.\s*AI\s*Smith|Prof\.\s*AI\s*Jones|Smith|Jones):\s*/i, "").trim()
+        })).slice(0, 4);
+      }
+      
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", text: `⚔️ **AI Debate Battle (Page ${currentPage})**:\n*A friendly academic debate between Dr. Smith (Academic/Theory) and Prof. Jones (Applied/Practice) has started!*` }
+      ]);
+
+      setAudioState("debate");
+
+      audioControllerRef.current = playSpeechConversation(
+        turns,
+        (idx) => {
+          setSpeakingTurnIndex(idx);
+          const turn = turns[idx];
+          setMessages(prev => [
+            ...prev,
+            { 
+              role: turn.gender === "male" ? "smith" : "jones", 
+              text: turn.text,
+              speaker: turn.speaker 
+            }
+          ]);
+        },
+        () => {
+          setAudioState("idle");
+          setSpeakingTurnIndex(null);
+        }
+      );
+    } catch (err) {
+      console.error("AI Debate script generation failed", err);
+      setIsTyping(false);
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", text: "Sorry, I had trouble reaching the AI to generate a custom debate script. Please check your connection." }
+      ]);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
