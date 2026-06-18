@@ -37,7 +37,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
           <Logo />
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {isAuthed && navItems.map((n) => {
               const active = loc.pathname.startsWith(n.to);
               return (
@@ -81,7 +81,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
             )}
             {isAuthed ? (
               <>
-                <button className="p-2 rounded-full hover:bg-muted hidden md:flex" aria-label="Notifications">
+                <button className="p-2 rounded-full hover:bg-muted hidden lg:flex" aria-label="Notifications">
                   <Bell className="w-4 h-4" />
                 </button>
                 <Link to="/dashboard" aria-label="Dashboard">
@@ -91,7 +91,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
                 </Link>
                 <Link
                   to="/settings"
-                  className="p-2 rounded-full hover:bg-muted text-foreground/60 hover:text-foreground hidden md:flex"
+                  className="p-2 rounded-full hover:bg-muted text-foreground/60 hover:text-foreground hidden lg:flex"
                   title="Settings"
                   aria-label="Settings"
                 >
@@ -99,7 +99,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="p-2 rounded-full hover:bg-muted text-foreground/60 hover:text-foreground hidden md:flex"
+                  className="p-2 rounded-full hover:bg-muted text-foreground/60 hover:text-foreground hidden lg:flex"
                   title="Log out"
                   aria-label="Log out"
                 >
@@ -108,10 +108,10 @@ export function Header({ authed = false }: { authed?: boolean }) {
               </>
             ) : (
               <>
-                <Link to="/login" className="text-sm font-medium hidden md:block">Log in</Link>
+                <Link to="/login" className="text-sm font-medium hidden lg:block">Log in</Link>
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 hidden md:block"
+                  className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 hidden lg:block"
                 >
                   Sign up
                 </Link>
@@ -121,7 +121,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className="p-2 rounded-full hover:bg-muted md:hidden"
+              className="p-2 rounded-full hover:bg-muted lg:hidden"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -131,7 +131,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-border bg-background/95 backdrop-blur px-6 py-4 space-y-1">
+          <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur px-6 py-4 space-y-1">
             {isAuthed && navItems.map((n) => {
               const active = loc.pathname.startsWith(n.to);
               return (
