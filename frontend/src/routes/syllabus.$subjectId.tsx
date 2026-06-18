@@ -65,10 +65,13 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
   // AI Chat States
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "smith" | "jones"; text: string; speaker?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "smith" | "jones"; text: string; speaker?: string; imageUrl?: string }>>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [audioState, setAudioState] = useState<"idle" | "speaking" | "debate">("idle");
+  const [audioState, setAudioState] = useState<"idle" | "speaking" | "teaching">("idle");
   const [speakingTurnIndex, setSpeakingTurnIndex] = useState<number | null>(null);
+  // 5-minute teach session timer (seconds)
+  const [teachTimer, setTeachTimer] = useState<number | null>(null);
+  const teachTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const audioControllerRef = useRef<{ stop: () => void } | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -84,6 +87,7 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
   useEffect(() => {
     return () => {
       stopAllSpeech();
+      if (teachTimerRef.current) clearInterval(teachTimerRef.current);
     };
   }, []);
 
@@ -100,6 +104,44 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  // Teach session countdown timer
+  useEffect(() => {
+    if (teachTimer === null) return;
+    if (teachTimer <= 0) {
+      setTeachTimer(null);
+      if (teachTimerRef.current) clearInterval(teachTimerRef.current);
+      return;
+    }
+  }, [teachTimer]);
+
+  const startTeachTimer = () => {
+    if (teachTimerRef.current) clearInterval(teachTimerRef.current);
+    setTeachTimer(300);
+    teachTimerRef.current = setInterval(() => {
+      setTeachTimer(prev => {
+        if (prev === null || prev <= 1) {
+          if (teachTimerRef.current) clearInterval(teachTimerRef.current!);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  // Build image URL for visual topics via Pollinations.ai (free, no key needed)
+  const buildImageUrl = (topic: string, subject: string) => {
+    const prompt = encodeURIComponent(
+      `Educational diagram: ${topic} for IGCSE ${subject} students, clear infographic style, white background, labeled`
+    );
+    return `https://image.pollinations.ai/prompt/${prompt}?width=480&height=300&nologo=true&seed=${Math.floor(Math.random()*9999)}`;
+  };
 
   const handlePrint = () => {
     window.print();
@@ -698,15 +740,17 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
     }
   };
 
-  // ── AI Debate Battle Turn Generator ──
-  const handleAiBattle = async () => {
-    // Stop active speech first
+  // ── AI Teaching Conversation (5-minute session) ──
+  const handleAiTeach = async () => {
+    // Stop any active speech first
     if (audioControllerRef.current) {
       audioControllerRef.current.stop();
       audioControllerRef.current = null;
     }
+    if (teachTimerRef.current) clearInterval(teachTimerRef.current);
     setAudioState("idle");
     setSpeakingTurnIndex(null);
+    setTeachTimer(null);
 
     const clean = cleanSubjectName(subjectName);
     const activePageTitle = getPageTitle(currentPage);
@@ -740,84 +784,97 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
     setIsTyping(true);
 
     try {
-      const systemPrompt = `You are a debate script writer for an academic AI show. You write lively, educational debates between two AI professors. Output ONLY valid JSON — no markdown, no code fences, no extra text. Respond with a raw JSON array only.`;
+      const systemPrompt = `You are writing a script for a 5-minute teaching conversation between two AI professors who are teaching a student together. Prof. AI Jones (female, warm, relatable) ALWAYS speaks first and explains concepts clearly. Dr. AI Smith (male, analytical, enthusiastic) follows up by asking a clarifying question about what Prof. Jones just said, then answers it himself to go deeper. They alternate this way — explain, then question-and-answer — covering every concept on the page. They always remember they are teaching the student watching and listening. Output ONLY a raw JSON array. No markdown, no code fences, no extra text.`;
 
-      const userPrompt = `Write a 4-turn academic debate between Dr. AI Smith (theoretical, rigorous, enthusiastic) and Prof. AI Jones (practical, application-focused, relatable) about the concepts on Page ${currentPage} ("${activePageTitle}") of the IGCSE ${clean} (${subjectCode}) syllabus.
+      const userPrompt = `Generate a 10-turn teaching script for Page ${currentPage} ("${activePageTitle}") of the IGCSE ${clean} (${subjectCode}) syllabus.
 
 Page content:
 ${contentSummary}
 
-Rules:
-- Exactly 4 turns, alternating Smith then Jones
-- Each turn is 3-5 sentences, substantive and educational
-- They build on each other's points, agree sometimes, disagree other times
-- Output ONLY this JSON array, nothing else:
-[{"speaker":"Dr. AI Smith","gender":"male","text":"..."},
-{"speaker":"Prof. AI Jones","gender":"female","text":"..."},
+Strict rules:
+- Turn 1: Prof. AI Jones starts — introduces and explains the first key concept on this page (3-4 sentences, warm and clear).
+- Turn 2: Dr. AI Smith asks a genuine question about what Prof. Jones just said, then answers it himself with a deeper explanation (3-4 sentences).
+- Turns 3-10: continue alternating exactly like this — Jones explains the next concept, Smith asks and answers about it — until ALL concepts on the page are covered.
+- Both professors know the student is listening and learning. They speak to teach, not to debate.
+- Also add a field "needsImage": true on turns where a diagram or visual would REALLY help (e.g. graphs, structures, processes, anatomy). Otherwise omit it.
+- Each turn: 3-4 sentences max. Conversational and educational.
+- Output ONLY this JSON array:
+[{"speaker":"Prof. AI Jones","gender":"female","text":"..."},
 {"speaker":"Dr. AI Smith","gender":"male","text":"..."},
-{"speaker":"Prof. AI Jones","gender":"female","text":"..."}]`;
+...up to 10 turns total]`;
 
-      const rawAnswer = await groqAsk(systemPrompt, userPrompt, { max_tokens: 2048, temperature: 0.8 });
+      const rawAnswer = await groqAsk(systemPrompt, userPrompt, { max_tokens: 3500, temperature: 0.75 });
 
       setIsTyping(false);
 
-      // Clean up markdown code block fences if any
+      // Extract JSON array robustly
       let rawJson = rawAnswer.trim();
       if (rawJson.startsWith("```")) {
         rawJson = rawJson.replace(/^```(json)?/, "").replace(/```$/, "").trim();
       }
-      // Extract JSON array if model added extra text before/after
       const jsonStart = rawJson.indexOf("[");
       const jsonEnd = rawJson.lastIndexOf("]");
       if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
         rawJson = rawJson.slice(jsonStart, jsonEnd + 1);
       }
 
-      let turns: SpeechTurn[];
+      interface TeachTurn extends SpeechTurn { needsImage?: boolean; }
+      let turns: TeachTurn[];
       try {
         turns = JSON.parse(rawJson);
       } catch (e) {
-        console.warn("AI returned invalid JSON array for debate, parsing as text turns", e);
+        console.warn("AI returned invalid JSON for teach session, parsing as paragraphs", e);
         const paragraphs = rawJson.split("\n\n").filter(p => p.trim());
         turns = paragraphs.map((p, i) => ({
-          speaker: i % 2 === 0 ? "Dr. AI Smith" : "Prof. AI Jones",
-          gender: i % 2 === 0 ? "male" : "female",
-          text: p.replace(/^(Dr\.\s*Smith|Prof\.\s*Jones|Dr\.\s*AI\s*Smith|Prof\.\s*AI\s*Jones|Smith|Jones):\s*/i, "").trim()
-        })).slice(0, 4);
+          speaker: i % 2 === 0 ? "Prof. AI Jones" : "Dr. AI Smith",
+          gender: (i % 2 === 0 ? "female" : "male") as "female" | "male",
+          text: p.replace(/^(Prof\.\s*AI\s*Jones|Dr\.\s*AI\s*Smith|Jones|Smith):\s*/i, "").trim()
+        })).slice(0, 10);
       }
-      
+
       setMessages(prev => [
         ...prev,
-        { role: "assistant", text: `⚔️ **AI Debate Battle (Page ${currentPage})**:\n*A friendly academic debate between Dr. Smith (Academic/Theory) and Prof. Jones (Applied/Practice) has started!*` }
+        { role: "assistant", text: `🎓 **AI Teaching Session — Page ${currentPage}** (5 min)\n*Prof. Jones & Dr. Smith are teaching you together. Sit back and learn!*` }
       ]);
 
-      setAudioState("debate");
+      setAudioState("teaching");
+      startTeachTimer();
 
       audioControllerRef.current = playSpeechConversation(
         turns,
         (idx) => {
           setSpeakingTurnIndex(idx);
-          const turn = turns[idx];
+          const turn = turns[idx] as TeachTurn;
+          // Add text message
           setMessages(prev => [
             ...prev,
-            { 
-              role: turn.gender === "male" ? "smith" : "jones", 
+            {
+              role: turn.gender === "female" ? "jones" : "smith",
               text: turn.text,
-              speaker: turn.speaker 
+              speaker: turn.speaker,
+              imageUrl: turn.needsImage
+                ? buildImageUrl(turn.text.split(".")[0], clean)
+                : undefined
             }
           ]);
         },
         () => {
           setAudioState("idle");
           setSpeakingTurnIndex(null);
+          if (teachTimerRef.current) clearInterval(teachTimerRef.current);
+          setTeachTimer(null);
+          setMessages(prev => [
+            ...prev,
+            { role: "assistant", text: "✅ Teaching session complete! Feel free to ask any follow-up questions below." }
+          ]);
         }
       );
     } catch (err) {
-      console.error("AI Debate script generation failed", err);
+      console.error("AI teach session failed", err);
       setIsTyping(false);
       setMessages(prev => [
         ...prev,
-        { role: "assistant", text: "Sorry, I had trouble reaching the AI to generate a custom debate script. Please check your connection." }
+        { role: "assistant", text: `❌ Could not start teaching session: ${err instanceof Error ? err.message : "Unknown error"}` }
       ]);
     }
   };
@@ -832,17 +889,20 @@ Rules:
     setIsTyping(true);
 
     // Query Groq directly — no backend needed
+    // Detect if user wants a long answer
+    const wantsLong = /long|detail|explain everything|full|comprehensive|elaborate/i.test(userMsg);
+    const maxTok = wantsLong ? 1800 : 400;
     try {
-      const systemPrompt = `You are an expert IGCSE tutor specialising in ${cleanName} (syllabus code ${subjectCode}). The student is currently reading Page ${currentPage} (${getPageTitle(currentPage)}) of the syllabus. Answer their questions clearly, in depth, and with helpful examples. Be encouraging and educational.`;
+      const systemPrompt = `You are a concise IGCSE tutor specialising in ${cleanName} (code ${subjectCode}), Page ${currentPage} (${getPageTitle(currentPage)}). Answer clearly and helpfully. ${wantsLong ? "Give a thorough, detailed explanation." : "Keep your answer short — 2-4 sentences unless the student asks for more detail."}  Use plain text only, no markdown.`;
 
-      const answer = await groqAsk(systemPrompt, userMsg, { max_tokens: 1024, temperature: 0.7 });
+      const answer = await groqAsk(systemPrompt, userMsg, { max_tokens: maxTok, temperature: 0.65 });
       setMessages(prev => [...prev, { role: "assistant", text: answer }]);
       setIsTyping(false);
     } catch (err) {
       console.error("AI chat failed", err);
       setMessages(prev => [
         ...prev,
-        { role: "assistant", text: `❌ Could not reach AI: ${err instanceof Error ? err.message : "Unknown error"}. Check your VITE_GROQ_API_KEY in frontend/.env` }
+        { role: "assistant", text: `❌ Could not reach AI: ${err instanceof Error ? err.message : "Unknown error"}.` }
       ]);
       setIsTyping(false);
     }
@@ -1361,34 +1421,48 @@ Rules:
               </button>
             </div>
 
-            {/* Action Toolbar */}
-            <div className="bg-slate-50 border-b border-slate-100 p-2 flex gap-2 justify-center shrink-0">
-              <button 
-                onClick={handleTeachMe}
-                className={`flex-1 py-1.5 px-3 bg-white border border-slate-200 hover:border-primary/30 rounded-xl text-xs font-bold text-slate-700 hover:text-primary flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-                  audioState === "speaking" ? "ring-2 ring-primary bg-primary/5 text-primary" : ""
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Teach Me This</span>
-              </button>
-              <button 
-                onClick={handleAiBattle}
-                className={`flex-1 py-1.5 px-3 bg-white border border-slate-200 hover:border-primary/30 rounded-xl text-xs font-bold text-slate-700 hover:text-primary flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-                  audioState === "debate" ? "ring-2 ring-primary bg-primary/5 text-primary" : ""
-                }`}
-              >
-                <Trophy className="w-3.5 h-3.5 text-red-500" />
-                <span>AI Debate Battle</span>
-              </button>
+            {/* Action Toolbar + Timer */}
+            <div className="bg-slate-50 border-b border-slate-100 p-2 flex flex-col gap-1.5 shrink-0">
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleTeachMe}
+                  className={`flex-1 py-1.5 px-3 bg-white border border-slate-200 hover:border-primary/30 rounded-xl text-xs font-bold text-slate-700 hover:text-primary flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                    audioState === "speaking" ? "ring-2 ring-primary bg-primary/5 text-primary" : ""
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Teach Me This</span>
+                </button>
+                <button 
+                  onClick={handleAiTeach}
+                  disabled={audioState === "teaching"}
+                  className={`flex-1 py-1.5 px-3 bg-white border border-slate-200 hover:border-purple-400/50 rounded-xl text-xs font-bold text-slate-700 hover:text-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                    audioState === "teaching" ? "ring-2 ring-purple-500 bg-purple-50 text-purple-700" : ""
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5 text-purple-500" />
+                  <span>{audioState === "teaching" ? "Teaching..." : "AI Teach Session"}</span>
+                </button>
+              </div>
+              {/* 5-minute countdown timer */}
+              {teachTimer !== null && (
+                <div className="flex items-center justify-center gap-2 bg-purple-50 border border-purple-100 rounded-xl py-1.5 px-3">
+                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                  <span className="text-[11px] font-bold text-purple-700">Session Timer:</span>
+                  <span className={`text-[13px] font-black font-mono ${
+                    teachTimer <= 30 ? "text-red-600" : "text-purple-800"
+                  }`}>{formatTimer(teachTimer)}</span>
+                  <span className="text-[10px] text-purple-400">/ 05:00</span>
+                </div>
+              )}
             </div>
 
             {/* Message Stream */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fcfcfc]">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#fcfcfc]">
               {messages.length === 0 && (
                 <div className="text-center py-8 text-slate-400">
                   <Bot className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                  <p className="text-xs">Ask a question about the IGCSE {cleanName} syllabus, or click 'Teach Me This' or 'AI Debate Battle' to hear dynamic audio explanations!</p>
+                  <p className="text-[11px]">Ask a question, click <strong>Teach Me This</strong> for a solo lesson, or <strong>AI Teach Session</strong> for a 5-min interactive audio session with Prof. Jones &amp; Dr. Smith!</p>
                 </div>
               )}
               
@@ -1397,43 +1471,59 @@ Rules:
                 const isSmith = msg.role === "smith";
                 const isJones = msg.role === "jones";
                 
-                // Determine styling based on role
                 let bgClass = "bg-slate-100 text-slate-800";
                 let alignClass = "justify-start";
                 let avatarColor = "bg-purple-100 text-purple-700";
+                let avatarLetter = "T";
                 let label = msg.speaker || "AI Tutor";
 
                 if (isUser) {
-                  bgClass = "bg-primary text-primary-foreground";
+                  bgClass = "bg-primary text-white";
                   alignClass = "justify-end";
-                  label = "Student";
+                  label = "You";
                 } else if (isSmith) {
                   bgClass = "bg-blue-50 text-blue-900 border border-blue-100";
-                  avatarColor = "bg-blue-100 text-blue-700";
+                  avatarColor = "bg-blue-500 text-white";
+                  avatarLetter = "S";
                 } else if (isJones) {
-                  bgClass = "bg-pink-50 text-pink-900 border border-pink-100";
-                  avatarColor = "bg-pink-100 text-pink-700";
+                  bgClass = "bg-rose-50 text-rose-900 border border-rose-100";
+                  avatarColor = "bg-rose-500 text-white";
+                  avatarLetter = "J";
                 }
 
-                const isActiveSpeaking = speakingTurnIndex !== null && 
-                  ((isSmith && speakingTurnIndex === idx) || (isJones && speakingTurnIndex === idx) || (msg.role === "assistant" && audioState === "speaking" && idx === messages.length - 1));
+                // A turn is actively speaking if its index matches the current speaking index
+                const isActiveSpeaking = speakingTurnIndex !== null &&
+                  ((isSmith || isJones) && speakingTurnIndex === idx - (messages.findIndex(m => m.role === "smith" || m.role === "jones")));
+                const isTutorSpeaking = msg.role === "assistant" && audioState === "speaking" && idx === messages.length - 1;
 
                 return (
-                  <div key={idx} className={`flex ${alignClass} items-start gap-2 animate-fade-in`}>
+                  <div key={idx} className={`flex ${alignClass} items-end gap-2 animate-fade-in`}>
                     {!isUser && (
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${avatarColor}`}>
-                        {isSmith ? "S" : isJones ? "J" : "T"}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${avatarColor} shadow-sm`}>
+                        {avatarLetter}
                       </div>
                     )}
-                    <div className="max-w-[75%] min-w-[100px]">
+                    <div className="max-w-[78%] min-w-[80px]">
                       <span className="text-[9px] text-slate-400 font-bold block mb-0.5 ml-1">
-                        {label} {isActiveSpeaking && "🗣️"}
+                        {label} {(isActiveSpeaking || isTutorSpeaking) && <span className="text-amber-500">🗣️</span>}
                       </span>
-                      <div className={`p-3 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap shadow-sm ${bgClass} ${
-                        isActiveSpeaking ? "ring-2 ring-amber-500 animate-pulse" : ""
+                      <div className={`px-3 py-2 rounded-2xl text-[11px] leading-[1.55] shadow-sm ${bgClass} ${
+                        (isActiveSpeaking || isTutorSpeaking) ? "ring-2 ring-amber-400" : ""
                       }`}>
                         {msg.text}
                       </div>
+                      {/* Inline image if this turn has a visual */}
+                      {msg.imageUrl && (
+                        <div className="mt-1.5 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                          <img
+                            src={msg.imageUrl}
+                            alt="Educational diagram"
+                            className="w-full object-cover max-h-40"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                          />
+                          <p className="text-[9px] text-center text-slate-400 py-1 bg-slate-50">AI-generated visual aid</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
