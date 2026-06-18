@@ -96,7 +96,7 @@ function schedulePlaybackChunk(ctx: AudioContext, chunk: Int16Array) {
 export function speakGemini(text: string, opts: SpeakOptions = {}): GeminiSpeechHandle {
   stopCurrent();
 
-  const voiceName = (typeof localStorage !== "undefined" ? localStorage.getItem("examglow_voice") : null) || opts.voiceName || "Aoede";
+  const voiceName = opts.voiceName || (typeof localStorage !== "undefined" ? localStorage.getItem("examglow_voice") : null) || "Aoede";
   const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_VOICE_API_KEY}`;
 
   const ws = new WebSocket(wsUrl);

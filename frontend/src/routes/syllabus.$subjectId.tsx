@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { playSpeechConversation, stopAllSpeech, speakSingleTurn, type SpeechTurn } from "@/lib/speech-utils";
+import { apiFetch } from "@/lib/api-client";
 
 export const Route = createFileRoute("/syllabus/$subjectId")({
   component: SyllabusPage,
@@ -846,29 +847,19 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
     setInputText("");
     setIsTyping(true);
 
-    // Attempt to query AI assistant QuickAskView backend, fallback to mock response
+    // Query AI assistant QuickAskView backend, fallback to mock response if error
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_VOICE_API_KEY || "";
-      if (apiKey) {
-        const res = await fetch("/api/ai/ask/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
-          },
-          body: JSON.stringify({
-            question: `For IGCSE ${cleanName} (${subjectCode}) syllabus, Page ${currentPage} (${getPageTitle(currentPage)}): ${userMsg}`
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setMessages(prev => [...prev, { role: "assistant", text: data.answer }]);
-          setIsTyping(false);
-          return;
-        }
-      }
+      const data = await apiFetch<{ answer: string }>("/api/ai/ask/", {
+        method: "POST",
+        body: JSON.stringify({
+          question: `For IGCSE ${cleanName} (${subjectCode}) syllabus, Page ${currentPage} (${getPageTitle(currentPage)}): ${userMsg}`
+        })
+      });
+      setMessages(prev => [...prev, { role: "assistant", text: data.answer }]);
+      setIsTyping(false);
+      return;
     } catch (err) {
-      // Fallback
+      console.error("AI chat failed, falling back to offline tutor", err);
     }
 
     setTimeout(() => {
