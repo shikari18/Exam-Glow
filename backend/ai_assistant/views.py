@@ -79,8 +79,8 @@ class SendMessageView(APIView):
                 reply = ai.group_chat_assist(session.group.name, '', content)
             else:
                 # Universal Library Intelligence
-                library_context = ai.perform_global_search(content, request.user)
-                reply = ai.chat(history + [
+                library_context = async_to_sync(ai.perform_global_search)(content, request.user)
+                reply = async_to_sync(ai.chat)(history + [
                     {'role': 'system', 'content': library_context},
                     {'role': 'user', 'content': content}
                 ])
@@ -110,6 +110,13 @@ class StreamMessageView(APIView):
         ai = AIService()
         full_reply = []
 
+        async def get_next_chunk(aiter):
+            try:
+                val = await aiter.__anext__()
+                return val, False
+            except StopAsyncIteration:
+                return None, True
+
         def event_stream():
             # High-Pressure Silent Pulse (2KB) to force Render proxy flush
             yield f": {' ' * 2048}\n\n"
@@ -123,15 +130,20 @@ class StreamMessageView(APIView):
                 ]
             else:
                 # Universal Library Intelligence
-                library_context = ai.perform_global_search(content, request.user)
+                library_context = async_to_sync(ai.perform_global_search)(content, request.user)
                 messages = history + [
                     {'role': 'system', 'content': library_context},
                     {'role': 'user', 'content': content}
                 ]
 
-            for chunk in ai.chat_stream(messages):
-                full_reply.append(chunk)
-                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+            aiter = ai.chat_stream(messages).__aiter__()
+            while True:
+                chunk, done = async_to_sync(get_next_chunk)(aiter)
+                if done:
+                    break
+                if chunk:
+                    full_reply.append(chunk)
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
 
             complete = ''.join(full_reply)
             ChatMessage.objects.create(session=session, role='assistant', content=complete)
@@ -155,7 +167,7 @@ def _build_resource_messages(ai, resource, content, history):
         system += f"\n\n{context}\n\nUse the above as your primary reference. When referencing notes, be specific about section names and vocabulary."
     
     # Add cross-document context from the rest of the library
-    global_context = ai.perform_global_search(content, resource.owner)
+    global_context = async_to_sync(ai.perform_global_search)(content, resource.owner)
     if global_context:
         system += f"\n\n{global_context}\n\nYou can use the above supplementary library knowledge to provide broader context or compare documents if relevant."
 
@@ -182,8 +194,8 @@ class QuickAskView(APIView):
                 answer = ai.ask_about_resource(resource, question)
             else:
                 # Universal Library Intelligence
-                library_context = ai.perform_global_search(question, request.user)
-                answer = ai.chat([
+                library_context = async_to_sync(ai.perform_global_search)(question, request.user)
+                answer = async_to_sync(ai.chat)([
                     {'role': 'system', 'content': library_context},
                     {'role': 'user', 'content': question}
                 ])
