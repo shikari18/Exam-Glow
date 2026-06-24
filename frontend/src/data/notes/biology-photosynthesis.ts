@@ -28,7 +28,6 @@ export const biologyPhotosynthesisNotes: NoteChapter = {
           text: "**Chloroplast structure:**\n• **Thylakoid membranes** — contain chlorophyll; site of the light-dependent reactions (light energy absorbed here)\n• **Granum** — stack of thylakoids (increases surface area for light absorption)\n• **Stroma** — fluid-filled space; site of the Calvin cycle (light-independent reactions)\n• **Double membrane** — outer and inner membranes surrounding the chloroplast",
           color: "green",
         },
-        },
         {
           kind: "keyterms",
           terms: [
