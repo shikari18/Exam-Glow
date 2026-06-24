@@ -68,7 +68,6 @@ export const physicsThermalNotes: NoteChapter = {
               "Much larger than fusion (bonds fully broken)",
             ],
           },
-        },
       ],
     },
     {
@@ -196,7 +195,6 @@ export const physicsThermalNotes: NoteChapter = {
               "Not yet achieved commercially on Earth",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "Nuclear equations must balance: total proton number (Z) and total mass number (A) must be equal on both sides.\nExample: ²³⁵U + ¹n → ¹⁴¹Ba + ⁹²Kr + 3¹n",

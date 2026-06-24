@@ -154,7 +154,6 @@ export const biologyNutritionNotes: NoteChapter = {
               "Products of metabolism that must be removed",
             ],
           },
-        },
         {
           kind: "warning",
           text: "Never confuse egestion and excretion. Faeces is NOT excretion — it is egestion. Urine IS excretion (contains urea, a metabolic waste product). CO₂ breathed out IS excretion. This distinction is worth marks in every exam.",

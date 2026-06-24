@@ -25,7 +25,6 @@ export const biologyNervousNotes: NoteChapter = {
               "Relay neurones — connect sensory and motor neurones within CNS",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "**Neurone structure:**\n• **Cell body** — contains nucleus and cytoplasm\n• **Dendrites** — short extensions that RECEIVE nerve impulses from other neurones\n• **Axon** — long fibre that TRANSMITS impulses away from cell body\n• **Myelin sheath** — fatty insulation around axon; speeds up transmission and prevents signal loss\n• **Axon terminals** — release neurotransmitters across the synapse to the next neurone",
@@ -132,7 +131,6 @@ export const biologyNervousNotes: NoteChapter = {
               "More light enters — improves vision",
             ],
           },
-        },
       ],
     },
     {

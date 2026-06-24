@@ -128,7 +128,6 @@ export const chemistryBondingNotes: NoteChapter = {
               "Graphite: DOES conduct (delocalised electrons between layers)",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "Diamond: each C bonded to 4 others (tetrahedral) — hardest natural substance. Graphite: each C bonded to 3 others in layers — layers can slide (lubricant), delocalised electrons conduct electricity.",

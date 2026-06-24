@@ -199,7 +199,6 @@ export const biologyEcologyNotes: NoteChapter = {
               "International climate agreements",
             ],
           },
-        },
       ],
     },
   ],

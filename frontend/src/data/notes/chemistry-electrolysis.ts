@@ -41,7 +41,6 @@ export const chemistryElectrolysisNotes: NoteChapter = {
               "2O²⁻ → O₂ + 4e⁻",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "OILRIG: Oxidation Is Loss (of electrons), Reduction Is Gain (of electrons)\nCathode = Reduction = Gain of electrons\nAnode = Oxidation = Loss of electrons",
@@ -153,7 +152,6 @@ export const chemistryElectrolysisNotes: NoteChapter = {
               "Examples: thermal decomposition, photosynthesis, dissolving ammonium nitrate",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "**Energy profile diagrams:**\n• **Exothermic** — products are LOWER in energy than reactants. ΔH is negative. Energy is released to surroundings.\n• **Endothermic** — products are HIGHER in energy than reactants. ΔH is positive. Energy is absorbed from surroundings.\n• **Activation energy (Ea)** = the energy barrier that must be overcome for the reaction to start (the peak above the reactants line)",

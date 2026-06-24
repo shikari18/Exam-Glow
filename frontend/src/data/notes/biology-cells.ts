@@ -90,7 +90,6 @@ export const biologyCellsNotes: NoteChapter = {
               "More complex internal organisation",
             ],
           },
-        },
         {
           kind: "tip",
           text: "Remember the 5-level hierarchy: **Cell → Tissue → Organ → Organ System → Organism**. This hierarchy is often worth 1 mark per correctly ordered level in exam answers.",
@@ -172,7 +171,6 @@ export const biologyCellsNotes: NoteChapter = {
               "Cell shrinks (crenation)",
             ],
           },
-        },
         {
           kind: "bullets",
           items: [
@@ -229,7 +227,6 @@ export const biologyCellsNotes: NoteChapter = {
               "Examples: O₂/CO₂ in alveoli; water movement in osmosis; glucose from gut into blood",
             ],
           },
-        },
         {
           kind: "tip",
           text: "Active transport is used when cells need to absorb substances already at higher concentration inside than outside — e.g. root hair cells absorbing NO₃⁻ and K⁺ ions from dilute soil water.",

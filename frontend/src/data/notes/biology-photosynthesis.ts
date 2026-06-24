@@ -159,7 +159,6 @@ export const biologyPhotosynthesisNotes: NoteChapter = {
               "Yeast dies when ethanol concentration gets too high",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "Oxygen debt: after anaerobic exercise, extra oxygen is needed to oxidise lactic acid back to CO₂ and water. This is why you keep breathing heavily after exercise stops.",
@@ -198,7 +197,6 @@ export const biologyPhotosynthesisNotes: NoteChapter = {
               "Releases energy as ATP",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "Compensation point: the light intensity at which the rate of photosynthesis exactly equals the rate of respiration — no net gas exchange occurs. Below this point, the plant uses more O₂ than it produces.",

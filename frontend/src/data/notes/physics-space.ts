@@ -141,7 +141,6 @@ export const physicsSpaceNotes: NoteChapter = {
               "Fuel: hydrogen isotopes (deuterium, tritium)",
             ],
           },
-        },
         {
           kind: "highlight",
           text: "Nuclear power station: controlled fission chain reaction heats water → steam → turbine → generator → electricity. Control rods (boron) absorb neutrons to control the rate. Moderator (water/graphite) slows neutrons.",

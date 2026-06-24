@@ -136,7 +136,6 @@ export const biologyGeneticsNotes: NoteChapter = {
               "Symptoms: progressive nervous system degeneration",
             ],
           },
-        },
         {
           kind: "warning",
           text: "Common mistake: Students often say 'if both parents are carriers, all children will be carriers'. This is wrong. Ff × Ff gives: 25% FF (unaffected, not carrier), 50% Ff (carriers), 25% ff (affected). Always draw the Punnett square.",

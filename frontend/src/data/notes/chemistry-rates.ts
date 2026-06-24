@@ -28,7 +28,6 @@ export const chemistryRatesNotes: NoteChapter = {
           text: "**Energy profile diagram:**\n• **Reactants** energy level on the left, **Products** on the right\n• **Activation energy (Ea)** = energy hill from reactants to peak (minimum energy for reaction)\n• **Exothermic** → products LOWER than reactants (energy released, ΔH is negative)\n• **Catalyst** lowers the activation energy peak WITHOUT changing reactant/product energy levels or ΔH",
           color: "blue",
         },
-        },
         {
           kind: "table",
           headers: ["Factor", "Effect on rate", "Explanation"],
@@ -72,7 +71,6 @@ export const chemistryRatesNotes: NoteChapter = {
               "Same ΔH (energy change)",
             ],
           },
-        },
         {
           kind: "table",
           headers: ["Industrial process", "Catalyst", "Reaction"],
