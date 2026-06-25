@@ -13,9 +13,9 @@ export const biologyCellsNotes: NoteChapter = {
         },
         {
           kind: "video",
-          youtubeId: "46NnjGMKKwM",
-          title: "Cell Structure — IGCSE Biology (Cognito)",
-          caption: "Animal vs plant cells, organelle functions and exam tips",
+          youtubeId: "RHyZVmbiA78",
+          title: "Cell Cycles & Biology — IGCSE Biology (Cognito)",
+          caption: "Cell structure, chromosomes, mitosis and cell organisation",
         },
         {
           kind: "image",

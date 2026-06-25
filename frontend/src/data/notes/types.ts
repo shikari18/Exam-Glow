@@ -32,5 +32,6 @@ export type NotePage = {
 export type NoteChapter = {
   subject: string;
   title: string;
+  summary?: string;     // optional short description shown on cards
   pages: NotePage[];
 };

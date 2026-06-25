@@ -28,32 +28,119 @@ import { mathematicsAlgebraNotes } from "./mathematics-algebra";
 import { mathematicsGeometryNotes } from "./mathematics-geometry";
 import { mathematicsStatisticsNotes } from "./mathematics-statistics";
 
+// Computer Science
+import {
+  csDataRepresentationNotes,
+  csDataTransmissionNotes,
+  csHardwareNotes,
+  csSoftwareNotes,
+  csInternetNotes,
+  csAlgorithmsNotes,
+  csProgrammingNotes,
+} from "./computer-science-notes";
+
+// Accounting
+import {
+  accountingDoubleEntryNotes,
+  accountingFinancialStatementsNotes,
+  accountingCashFlowNotes,
+} from "./accounting-notes";
+
+// Economics
+import {
+  economicsBasicProblemNotes,
+  economicsSupplyDemandNotes,
+  economicsMacroNotes,
+  economicsTradeNotes,
+} from "./economics-notes";
+
+// Business Studies
+import {
+  businessActivityNotes,
+  businessPeopleNotes,
+  businessMarketingNotes,
+  businessFinanceNotes,
+} from "./business-studies-notes";
+
+// Geography
+import {
+  geographyPopulationNotes,
+  geographyPhysicalNotes,
+  geographyHazardsNotes,
+} from "./geography-notes";
+
+// History
+import {
+  historyWWINotes,
+  historyRiseOfDictatorsNotes,
+  historyColdWarNotes,
+} from "./history-notes";
+
+// English Language
+import {
+  englishReadingNotes,
+  englishWritingNotes,
+} from "./english-notes";
+
 export type { NoteChapter, NotePage, NoteBlock, BulletItem } from "./types";
 
 export const noteChapters: NoteChapter[] = [
-  // Biology — 6 chapters, 30 pages
+  // Biology — 6 chapters
   biologyCellsNotes,
   biologyPhotosynthesisNotes,
   biologyGeneticsNotes,
   biologyNutritionNotes,
   biologyNervousNotes,
   biologyEcologyNotes,
-  // Chemistry — 5 chapters, 20 pages
+  // Chemistry — 5 chapters
   chemistryBondingNotes,
   chemistryOrganicNotes,
   chemistryRatesNotes,
   chemistryAcidsNotes,
   chemistryElectrolysisNotes,
-  // Physics — 5 chapters, 25 pages
+  // Physics — 5 chapters
   physicsForcesNotes,
   physicsElectricityNotes,
   physicsWavesNotes,
   physicsThermalNotes,
   physicsSpaceNotes,
-  // Mathematics — 3 chapters, 15 pages
+  // Mathematics — 3 chapters
   mathematicsAlgebraNotes,
   mathematicsGeometryNotes,
   mathematicsStatisticsNotes,
+  // Computer Science — 7 chapters
+  csDataRepresentationNotes,
+  csDataTransmissionNotes,
+  csHardwareNotes,
+  csSoftwareNotes,
+  csInternetNotes,
+  csAlgorithmsNotes,
+  csProgrammingNotes,
+  // Accounting — 3 chapters
+  accountingDoubleEntryNotes,
+  accountingFinancialStatementsNotes,
+  accountingCashFlowNotes,
+  // Economics — 4 chapters
+  economicsBasicProblemNotes,
+  economicsSupplyDemandNotes,
+  economicsMacroNotes,
+  economicsTradeNotes,
+  // Business Studies — 4 chapters
+  businessActivityNotes,
+  businessPeopleNotes,
+  businessMarketingNotes,
+  businessFinanceNotes,
+  // Geography — 3 chapters
+  geographyPopulationNotes,
+  geographyPhysicalNotes,
+  geographyHazardsNotes,
+  // History — 3 chapters
+  historyWWINotes,
+  historyRiseOfDictatorsNotes,
+  historyColdWarNotes,
+  // English Language — 2 chapters
+  englishReadingNotes,
+  englishWritingNotes,
 ];
 
 const subjectMap: Record<string, string> = {
@@ -293,12 +380,27 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   ];
 }
 
+// Maps display subject names → canonical subject names used in noteChapters
+const subjectAliasMap: Record<string, string> = {
+  "ict/computer science": "Computer Science",
+  "computer science": "Computer Science",
+  "english literature": "English Language",
+  "english language": "English Language",
+  "additional mathematics": "Mathematics",
+};
+
 export function getChaptersForSubject(subject: string): NoteChapter[] {
-  const staticChapters = noteChapters.filter((c) => c.subject === subject);
-  if (staticChapters.length > 0) {
-    return staticChapters;
+  // First try exact match
+  let staticChapters = noteChapters.filter((c) => c.subject === subject);
+  if (staticChapters.length > 0) return staticChapters;
+
+  // Try alias resolution (e.g. "ICT/Computer Science" → "Computer Science")
+  const alias = subjectAliasMap[subject.toLowerCase().trim()];
+  if (alias) {
+    staticChapters = noteChapters.filter((c) => c.subject === alias);
+    if (staticChapters.length > 0) return staticChapters;
   }
-  
+
   const cleanSubject = subject.toLowerCase().trim();
   const syllabusKey = subjectMap[cleanSubject];
   if (!syllabusKey) return [];
