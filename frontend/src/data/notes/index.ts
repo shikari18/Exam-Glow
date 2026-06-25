@@ -80,9 +80,16 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── ACCOUNTING ──────────────────────────────────────────────────────────────
   if (s.includes("accounting") || t.includes("ledger") || t.includes("double entry") || t.includes("trial balance") || t.includes("depreciation") || t.includes("balance sheet") || t.includes("income statement") || t.includes("bookkeeping")) {
     return [
-      { kind: "video", youtubeId: "SPXanyy3-hU", title: `${title} — IGCSE Accounting`, caption: "Cambridge IGCSE Accounting 0452 — double entry, ledgers and financial statements" },
       { kind: "intro", text: `**${title}** — ${desc}. This guide covers the key principles, entries, and financial statement structures required for Cambridge IGCSE Accounting (0452).` },
-      { kind: "highlight", text: "**T-Account Format:**\n\n| **DEBIT (DR) — Left** | **CREDIT (CR) — Right** |\n|---|---|\n| Assets increase | Assets decrease |\n| Expenses increase | Liabilities increase |\n| Drawings increase | Capital increases |\n| | Revenue increases |", color: "blue" },
+      { kind: "highlight", text: "**The Accounting Equation:** Assets = Liabilities + Owner's Equity\n\nThis must balance after EVERY transaction. It is the foundation of double entry bookkeeping.", color: "blue" },
+      { kind: "table", headers: ["Account type", "Debit (DR) increases", "Credit (CR) increases"], rows: [
+        ["Asset (cash, machinery, receivables)", "✓ Yes", "✗ No"],
+        ["Liability (loan, payables)", "✗ No", "✓ Yes"],
+        ["Capital / Equity", "✗ No", "✓ Yes"],
+        ["Revenue / Income", "✗ No", "✓ Yes"],
+        ["Expense (wages, rent)", "✓ Yes", "✗ No"],
+        ["Drawings", "✓ Yes", "✗ No"],
+      ]},
       { kind: "keyterms", terms: [
         { label: "Double Entry", value: "Every transaction has TWO equal and opposite entries — a debit and a credit." },
         { label: "Debit (DR)", value: "Entry on the LEFT side of a T-account. Increases assets and expenses." },
@@ -109,7 +116,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     return [
       { kind: "video", youtubeId: "dstRL5xB0Sk", title: `${title} — IGCSE Economics`, caption: "Cambridge IGCSE Economics 0455 — key concepts with diagrams and exam technique" },
       { kind: "intro", text: `**${title}** — ${desc}. This note covers the key economic concepts, diagrams and analysis for Cambridge IGCSE Economics (0455).` },
-      { kind: "highlight", text: "**Supply & Demand Diagram:**\n• D curve slopes downward (higher price → less demanded)\n• S curve slopes upward (higher price → more supplied)\n• Equilibrium E = intersection of S and D\n• At P*: Qd = Qs (market clears, no shortage or surplus)", color: "blue" },
+      { kind: "highlight", text: "**Supply & Demand Diagram — Key Points:**\n• D curve slopes downward (higher price → less demanded)\n• S curve slopes upward (higher price → more supplied)\n• Equilibrium E = intersection of S and D curves\n• At P*: Qd = Qs — market clears with no shortage or surplus", color: "blue" },
       { kind: "keyterms", terms: [
         { label: "Demand", value: "The willingness and ability of consumers to purchase a good at various prices in a given time period." },
         { label: "Supply", value: "The willingness and ability of producers to offer a good for sale at various prices in a given time period." },
