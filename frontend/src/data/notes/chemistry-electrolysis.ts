@@ -8,6 +8,12 @@ export const chemistryElectrolysisNotes: NoteChapter = {
       section: "7.1 Electrolysis Basics",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "ilNOpROacf0",
+          title: "Electrolysis Basics — IGCSE Chemistry (Cognito)",
+          caption: "Electrolysis of molten and aqueous compounds, electrode reactions and examples",
+        },
+        {
           kind: "definition",
           term: "Electrolysis",
           definition: "the decomposition of an ionic compound (electrolyte) using electricity. Requires a molten or dissolved ionic compound and two electrodes connected to a DC power supply.",

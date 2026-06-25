@@ -8,6 +8,12 @@ export const biologyGeneticsNotes: NoteChapter = {
       section: "7.1 DNA & Chromosomes",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "mvWy5lbUoHA",
+          title: "Genetic Diagrams — IGCSE Biology (Cognito)",
+          caption: "DNA, chromosomes, inheritance and Punnett squares explained",
+        },
+        {
           kind: "definition",
           term: "DNA (deoxyribonucleic acid)",
           definition: "a double helix polymer made of nucleotide monomers. Each nucleotide contains a phosphate group, deoxyribose sugar, and one of four bases.",

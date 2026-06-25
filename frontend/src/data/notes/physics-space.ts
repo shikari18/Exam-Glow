@@ -8,6 +8,12 @@ export const physicsSpaceNotes: NoteChapter = {
       section: "6.1 The Solar System",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "7v2gs8rdQzU",
+          title: "Space Physics — IGCSE Physics (Cognito)",
+          caption: "The solar system, stars, life cycle, nuclear physics and radioactivity",
+        },
+        {
           kind: "table",
           headers: ["Object", "Description", "Key facts"],
           rows: [

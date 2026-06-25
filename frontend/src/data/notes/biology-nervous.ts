@@ -8,6 +8,12 @@ export const biologyNervousNotes: NoteChapter = {
       section: "6.1 The Nervous System",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "46NnjGMKKwM",
+          title: "Nervous System — IGCSE Biology (Cognito)",
+          caption: "Neurones, reflex arcs, the eye and hormones",
+        },
+        {
           kind: "intro",
           text: "The nervous system allows rapid communication between different parts of the body. It consists of the central nervous system (CNS) and the peripheral nervous system.",
         },

@@ -8,6 +8,12 @@ export const biologyNutritionNotes: NoteChapter = {
       section: "3.1 Nutrients & Their Functions",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "vMI46qGQMDw",
+          title: "Digestive System — IGCSE Biology (Cognito)",
+          caption: "Nutrients, digestion, enzymes and absorption in the human digestive system",
+        },
+        {
           kind: "table",
           headers: ["Nutrient", "Function", "Sources", "Deficiency"],
           rows: [

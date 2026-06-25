@@ -8,6 +8,12 @@ export const biologyEcologyNotes: NoteChapter = {
       section: "8.1 Ecosystems & Food Chains",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "tC-u8xcZYSM",
+          title: "Adaptations & Ecosystems — IGCSE Biology (Cognito)",
+          caption: "Ecosystems, food chains, pyramids of biomass and adaptations",
+        },
+        {
           kind: "keyterms",
           terms: [
             { label: "Habitat", value: "the place where an organism lives" },

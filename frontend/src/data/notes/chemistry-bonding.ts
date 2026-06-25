@@ -72,8 +72,8 @@ export const chemistryBondingNotes: NoteChapter = {
         },
         {
           kind: "image",
-          src: "https://openstax.org/apps/image-cdn/v1/f=webp/apps/archive/20260604.144757/resources/193888153fd102102a9be86bb6a21cfd3ff64944",
-          caption: "NaCl ionic lattice — Na⁺ (small) and Cl⁻ (large) ions arranged alternately, held by strong electrostatic forces in all directions. Source: OpenStax Chemistry 2e, CC BY-NC-SA",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Sodium-chloride-3D-ionic.png/640px-Sodium-chloride-3D-ionic.png",
+          caption: "NaCl ionic lattice — Na⁺ (small purple) and Cl⁻ (large green) ions in a regular 3D arrangement held by strong electrostatic forces.",
           side: "full",
         },
         {
