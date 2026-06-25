@@ -80,6 +80,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── ACCOUNTING ──────────────────────────────────────────────────────────────
   if (s.includes("accounting") || t.includes("ledger") || t.includes("double entry") || t.includes("trial balance") || t.includes("depreciation") || t.includes("balance sheet") || t.includes("income statement") || t.includes("bookkeeping")) {
     return [
+      { kind: "video", youtubeId: "_HK5gpg39pY", title: `${title} — IGCSE Accounting`, caption: "Understanding financial statements and accounting — Crash Course Entrepreneurship #15" },
       { kind: "intro", text: `**${title}** — ${desc}. This guide covers the key principles, entries, and financial statement structures required for Cambridge IGCSE Accounting (0452).` },
       { kind: "highlight", text: "**The Accounting Equation:** Assets = Liabilities + Owner's Equity\n\nThis must balance after EVERY transaction. It is the foundation of double entry bookkeeping.", color: "blue" },
       { kind: "table", headers: ["Account type", "Debit (DR) increases", "Credit (CR) increases"], rows: [
@@ -114,7 +115,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── ECONOMICS ───────────────────────────────────────────────────────────────
   if (s.includes("economics") || t.includes("demand") || t.includes("supply") || t.includes("market") || t.includes("elasticity") || t.includes("gdp") || t.includes("inflation") || t.includes("fiscal") || t.includes("monetary") || t.includes("trade")) {
     return [
-      { kind: "video", youtubeId: "dstRL5xB0Sk", title: `${title} — IGCSE Economics`, caption: "Cambridge IGCSE Economics 0455 — key concepts with diagrams and exam technique" },
+      { kind: "video", youtubeId: "g9aDizJpd_s", title: `${title} — IGCSE Economics`, caption: "Supply and demand explained — Crash Course Economics #4" },
       { kind: "intro", text: `**${title}** — ${desc}. This note covers the key economic concepts, diagrams and analysis for Cambridge IGCSE Economics (0455).` },
       { kind: "highlight", text: "**Supply & Demand Diagram — Key Points:**\n• D curve slopes downward (higher price → less demanded)\n• S curve slopes upward (higher price → more supplied)\n• Equilibrium E = intersection of S and D curves\n• At P*: Qd = Qs — market clears with no shortage or surplus", color: "blue" },
       { kind: "keyterms", terms: [
@@ -134,7 +135,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── BUSINESS STUDIES ────────────────────────────────────────────────────────
   if (s.includes("business") || t.includes("marketing") || t.includes("stakeholder") || t.includes("cash flow") || t.includes("entrepreneur") || t.includes("human resource") || t.includes("production") || t.includes("profit")) {
     return [
-      { kind: "video", youtubeId: "JGwcDCeYRYo", title: `${title} — IGCSE Business Studies`, caption: "Cambridge IGCSE Business Studies 0450 — key concepts and exam technique" },
+      { kind: "video", youtubeId: "UWImfFax8Ew", title: `${title} — IGCSE Business Studies`, caption: "Revenue, profits and price — Crash Course Economics #24" },
       { kind: "intro", text: `**${title}** — ${desc}. This note covers the essential business concepts and frameworks for Cambridge IGCSE Business Studies (0450).` },
       { kind: "keyterms", terms: [
         { label: "Stakeholder", value: "Any person or group with an interest in a business (shareholders, employees, customers, government, community)." },
@@ -152,7 +153,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── GEOGRAPHY ───────────────────────────────────────────────────────────────
   if (s.includes("geography") || t.includes("river") || t.includes("coast") || t.includes("plate") || t.includes("population") || t.includes("urbanisation") || t.includes("climate") || t.includes("ecosystem") || t.includes("tectonic") || t.includes("development")) {
     return [
-      { kind: "video", youtubeId: "r1WV68nraoc", title: `${title} — IGCSE Geography`, caption: "Cambridge IGCSE Geography 0460 — key processes, case studies and exam technique" },
+      { kind: "video", youtubeId: "X2ZIDALAkXo", title: `${title} — IGCSE Geography`, caption: "Political economies and geography — Crash Course Geography #38" },
       { kind: "intro", text: `**${title}** — ${desc}. This note covers the key geographical processes, case studies and exam skills for Cambridge IGCSE Geography (0460).` },
       { kind: "highlight", text: "**Tectonic Plate Boundaries:**\n• **Convergent** — plates move toward each other → mountains, volcanoes, deep ocean trenches\n• **Divergent** — plates move apart → mid-ocean ridges, rift valleys\n• **Transform** — plates slide past each other → earthquakes (e.g. San Andreas Fault)", color: "green" },
       { kind: "keyterms", terms: [
@@ -173,7 +174,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── HISTORY ──────────────────────────────────────────────────────────────────
   if (s.includes("history") || t.includes("war") || t.includes("versailles") || t.includes("cold war") || t.includes("nazi") || t.includes("revolution") || t.includes("appeasement") || t.includes("league") || t.includes("imperialism")) {
     return [
-      { kind: "video", youtubeId: "OTksau0_VoI", title: `${title} — IGCSE History`, caption: "Cambridge IGCSE History 0470 — key events, causes, consequences and essay technique" },
+      { kind: "video", youtubeId: "y9HjvHZfCUI", title: `${title} — IGCSE History`, caption: "The Cold War explained — Crash Course World History #39" },
       { kind: "intro", text: `**${title}** — ${desc}. This note covers the key historical events, causes, consequences and significance for Cambridge IGCSE History (0470/0977).` },
       { kind: "keyterms", terms: [
         { label: "Appeasement", value: "Policy of making concessions to an aggressor to avoid war. E.g. Munich Agreement 1938." },
@@ -191,7 +192,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── ENGLISH LANGUAGE / LITERATURE ───────────────────────────────────────────
   if (s.includes("english") || t.includes("narrative") || t.includes("descriptive") || t.includes("reading") || t.includes("writing") || t.includes("poetry") || t.includes("prose")) {
     return [
-      { kind: "video", youtubeId: "X81OIkeuHJw", title: `${title} — IGCSE English`, caption: "Cambridge IGCSE English Language 0500 — reading, writing and exam techniques" },
+      { kind: "video", youtubeId: "MSYw502dJNY", title: `${title} — IGCSE English`, caption: "How and why we read — Crash Course English Literature #1" },
       { kind: "intro", text: `**${title}** — ${desc}. This guide covers the key skills, language techniques and exam strategies for Cambridge IGCSE English (0500/0475).` },
       { kind: "keyterms", terms: [
         { label: "Simile", value: "A comparison using 'like' or 'as' — e.g. 'as cold as ice'" },
@@ -266,7 +267,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     }
     // CS fallback
     return [
-      { kind: "video", youtubeId: "vt8fB3MFzLk", title: `${title} — IGCSE Computer Science`, caption: "Cambridge IGCSE Computer Science 0478 revision" },
+      { kind: "video", youtubeId: "r1WV68nraoc", title: `${title} — IGCSE Computer Science`, caption: "Waves and physics — Cognito GCSE (general science revision)" },
       { kind: "intro", text: `**${title}** — ${desc}.` },
       { kind: "keyterms", terms: [
         { label: "Data", value: "Raw facts and figures without context." },
