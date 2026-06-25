@@ -7,7 +7,7 @@ export const businessActivityNotes: NoteChapter = {
     {
       section: "1.1 Purpose and Nature of Business Activity",
       blocks: [
-        { kind: "video", youtubeId: "UWImfFax8Ew", title: "Introduction to Business — IGCSE Business Studies", caption: "What businesses do, how they add value, stakeholders and the role of enterprise in the economy" },
+        { kind: "video", youtubeId: "jU-vBtGBmMk", title: "What is Business Activity? — IGCSE Business Studies (Tutor2u)", caption: "What businesses do, how they add value, types of goods and services, stakeholders and the role of enterprise" },
         { kind: "intro", text: "**Business activity** involves using resources (factors of production) to produce goods and services that satisfy human wants and needs. Businesses solve the basic economic problem by deciding what to produce, how, and for whom." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/400px-Camponotus_flavomarginatus_ant.jpg", caption: "Businesses create added value: raw inputs (like wood, metal, labour) are transformed into finished products worth more than the sum of their parts — the difference is added value, which funds profit and wages.", side: "right" },
         { kind: "keyterms", terms: [
@@ -26,7 +26,7 @@ export const businessActivityNotes: NoteChapter = {
     {
       section: "1.2 Types of Business Organisation",
       blocks: [
-        { kind: "video", youtubeId: "BHTA7NTEdlE", title: "Types of Business Ownership — Sole Trader, Partnership, Ltd, PLC — IGCSE Business", caption: "Comparing sole traders, partnerships, private and public limited companies — ownership, liability and control" },
+        { kind: "video", youtubeId: "6-sMfNr2ahA", title: "Types of Business Organisation — Sole Trader to PLC (Tutor2u)", caption: "Comparing sole traders, partnerships, private and public limited companies — ownership, liability, funding and control" },
         { kind: "intro", text: "Businesses are organised in different legal forms, each with different ownership, liability, and funding characteristics." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/London_Stock_Exchange_2.jpg/800px-London_Stock_Exchange_2.jpg", caption: "The London Stock Exchange: where public limited companies (PLCs) list their shares for sale to the public. PLCs gain access to enormous capital but face strict regulation and public scrutiny.", side: "full" },
         { kind: "table", headers: ["Type", "Owners", "Liability", "Funding", "Control"], rows: [
@@ -51,7 +51,7 @@ export const businessPeopleNotes: NoteChapter = {
     {
       section: "2.1 Motivation",
       blocks: [
-        { kind: "video", youtubeId: "v4ViHHgBFiE", title: "Motivation Theories — Maslow, Taylor, Herzberg — IGCSE Business", caption: "How Maslow's hierarchy, Taylor's scientific management and Herzberg's two-factor theory explain workplace motivation" },
+        { kind: "video", youtubeId: "2Kh0WMuFZwU", title: "Motivation Theories — Maslow, Taylor, Herzberg (Tutor2u IGCSE Business)", caption: "Maslow's hierarchy of needs, Taylor's scientific management and Herzberg's two-factor theory applied to the workplace" },
         { kind: "intro", text: "**Motivation** is the desire to work hard to achieve goals. Motivated employees are more productive, produce better quality work, and are less likely to leave the business." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/MaslowsHierarchyOfNeeds.svg/800px-MaslowsHierarchyOfNeeds.svg.png", caption: "Maslow's Hierarchy of Needs: lower-level needs (physiological, safety) must be satisfied before higher-level needs (social, esteem, self-actualisation) can motivate workers.", side: "right" },
         { kind: "keyterms", terms: [
@@ -73,7 +73,7 @@ export const businessPeopleNotes: NoteChapter = {
     {
       section: "2.2 Organisational Structure",
       blocks: [
-        { kind: "video", youtubeId: "dYvn6mhRRfI", title: "Organisational Structure — Hierarchy, Span of Control — IGCSE Business", caption: "Tall vs flat structures, span of control, chain of command, delegation, centralisation and decentralisation" },
+        { kind: "video", youtubeId: "gKDn_Fp9ByQ", title: "Organisational Structures — Hierarchy, Span of Control (Tutor2u IGCSE Business)", caption: "Tall and flat structures, span of control, chain of command, delegation, centralisation and decentralisation" },
         { kind: "intro", text: "**Organisational structure** determines how authority, responsibility, and communication flow through a business — shown in an **organisational chart**." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Org_chart_structure.png/600px-Org_chart_structure.png", caption: "Organisational chart showing a tall hierarchy: CEO at top, multiple management layers below, with narrow spans of control at each level — typical of large, formal organisations like banks or the military.", side: "right" },
         { kind: "keyterms", terms: [
@@ -97,7 +97,7 @@ export const businessMarketingNotes: NoteChapter = {
     {
       section: "3.1 Market Research",
       blocks: [
-        { kind: "video", youtubeId: "ZjE4XpaTsUU", title: "Marketing Mix & Market Research — IGCSE Business Studies", caption: "Primary and secondary market research, market segmentation and the 4Ps marketing mix explained" },
+        { kind: "video", youtubeId: "jIPn3SYbr3g", title: "Market Research — Primary and Secondary (Tutor2u IGCSE Business)", caption: "Primary and secondary market research methods, market segmentation and how businesses identify their target market" },
         { kind: "intro", text: "**Marketing** identifies customer needs and satisfies them profitably. **Market research** provides the data needed to make informed marketing decisions." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Segmentation_-_Customer.jpg/600px-Segmentation_-_Customer.jpg", caption: "Market segmentation divides the total market into groups (segments) sharing similar characteristics — allowing businesses to target their product, pricing and promotion to specific customer groups more effectively.", side: "right" },
         { kind: "keyterms", terms: [
@@ -113,7 +113,7 @@ export const businessMarketingNotes: NoteChapter = {
     {
       section: "3.2 The Marketing Mix (4Ps)",
       blocks: [
-        { kind: "video", youtubeId: "FTWqXPlnuJk", title: "The 4Ps Marketing Mix — Product, Price, Place, Promotion — IGCSE Business", caption: "How product, pricing strategies, distribution channels and promotional methods work together as the marketing mix" },
+        { kind: "video", youtubeId: "BoI9f6c6WkA", title: "The Marketing Mix (4Ps) — Product, Price, Place, Promotion (Tutor2u IGCSE Business)", caption: "How the four Ps work together — product decisions, pricing strategies, distribution channels, and the promotional mix" },
         { kind: "intro", text: "The **Marketing Mix (4Ps)** combines four elements that must work together consistently to successfully market a product to its target market." },
         { kind: "table", headers: ["P", "What it covers", "Key decisions"], rows: [
           ["Product", "Design, features, quality, branding, packaging, after-sales service, product range", "USP, product life cycle stage, customer needs, differentiation from competitors"],
@@ -136,7 +136,7 @@ export const businessFinanceNotes: NoteChapter = {
     {
       section: "4.1 Revenue, Costs and Profit",
       blocks: [
-        { kind: "video", youtubeId: "6jGMRxrZ4vs", title: "Costs, Revenue and Profit — IGCSE Business Studies", caption: "Fixed and variable costs, total cost, revenue, profit and the difference between gross and net profit" },
+        { kind: "video", youtubeId: "2UW3M4qH-CY", title: "Costs, Revenue and Profit — Fixed and Variable Costs (Tutor2u IGCSE Business)", caption: "Fixed costs, variable costs, total cost, revenue and profit — how they are calculated and the difference between gross and net profit" },
         { kind: "intro", text: "Understanding the relationship between revenue, costs, and profit is fundamental to assessing business performance and viability." },
         { kind: "highlight", text: "**Key formulas:**\nRevenue = Selling price × Quantity sold\nTotal cost = Fixed cost + Variable cost\nProfit = Revenue − Total cost\nContribution per unit = Selling price − Variable cost per unit\nProfit = Total contribution − Fixed costs", color: "blue" },
         { kind: "comparison", left: { label: "Fixed costs", items: ["Do NOT change with output level", "Paid even if nothing is produced", "Examples: rent, insurance, manager salaries, loan repayments", "On a graph: horizontal line"] }, right: { label: "Variable costs", items: ["Change DIRECTLY with output level", "Zero if nothing produced; double if output doubles", "Examples: raw materials, packaging, piece-rate wages, electricity for machines", "On a graph: diagonal line through origin"] } },
@@ -146,7 +146,7 @@ export const businessFinanceNotes: NoteChapter = {
     {
       section: "4.2 Break-Even Analysis",
       blocks: [
-        { kind: "video", youtubeId: "E7hVtDVvXYw", title: "Break-Even Analysis — IGCSE Business Studies", caption: "How to calculate break-even output, draw break-even charts, find margin of safety and interpret the results" },
+        { kind: "video", youtubeId: "0sL7bEoALkg", title: "Break-Even Analysis — Calculation, Chart and Margin of Safety (Tutor2u IGCSE Business)", caption: "How to calculate the break-even output, construct a break-even chart, identify the margin of safety and interpret the results" },
         { kind: "intro", text: "**Break-even analysis** shows the output level at which total revenue equals total costs — at this point the business makes neither profit nor loss." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Breakevenpoint.png/600px-Breakevenpoint.png", caption: "Break-even chart: the intersection of the Total Revenue (TR) and Total Cost (TC) lines is the break-even point. Output above this = profit; output below = loss. The margin of safety is the gap between actual and break-even output.", side: "right" },
         { kind: "highlight", text: "**Break-even formulas:**\nContribution per unit = Selling price − Variable cost per unit\nBreak-even output = Fixed costs ÷ Contribution per unit\nMargin of safety = Actual output − Break-even output\n\n**Worked example:**\nFixed costs = £6,000; Selling price = £20; Variable cost = £8\nContribution = £20 − £8 = £12\nBreak-even = £6,000 ÷ £12 = **500 units**\nIf actual output = 700: Margin of safety = 700 − 500 = **200 units**", color: "green" },
@@ -156,7 +156,7 @@ export const businessFinanceNotes: NoteChapter = {
     {
       section: "4.3 Sources of Finance",
       blocks: [
-        { kind: "video", youtubeId: "hVlhMdGOFZE", title: "Sources of Finance — IGCSE Business Studies", caption: "Internal sources (retained profit, asset sales) and external sources (bank loans, overdraft, share issue, crowdfunding) compared" },
+        { kind: "video", youtubeId: "XomKJOBp5Pc", title: "Sources of Finance — Internal and External (Tutor2u IGCSE Business)", caption: "Comparing internal sources (retained profit, asset sales) with external sources (bank loans, share issue, crowdfunding, overdraft)" },
         { kind: "intro", text: "Businesses need finance for **start-up**, **working capital** (day-to-day operations), and **expansion**. Different sources suit different needs and business types." },
         { kind: "comparison", left: { label: "Internal sources", items: ["Retained profit — cheapest; no interest, no loss of control", "Sale of assets — selling unused assets for cash (one-off)", "Owner's personal savings — fast but limited amount", "Working capital management — collect debts faster, delay supplier payments"] }, right: { label: "External sources", items: ["Bank loan — large sum; fixed/variable interest; repaid over time", "Bank overdraft — flexible short-term; interest only on amount used", "Share issue (PLC) — large capital; no repayment but ownership diluted", "Venture capital — equity for high-risk startups", "Crowdfunding — small amounts from many people online", "Hire purchase/leasing — acquire assets without large upfront cost"] } },
         { kind: "tip", text: "Match finance source to purpose: long-term investment (new factory) → long-term source (mortgage, share issue). Short-term need (pay wages this month) → short-term source (overdraft). Consider cost, effect on control, and ability to repay." },

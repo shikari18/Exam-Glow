@@ -43,6 +43,12 @@ export const physicsForcesNotes: NoteChapter = {
           text: "**Velocity-time graph shapes:**\n• Horizontal line → constant velocity (zero acceleration)\n• Straight line with positive gradient → uniform acceleration\n• Curved line with decreasing gradient → decreasing acceleration\n• Area under the graph = displacement",
           color: "pink",
         },
+        {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Velocity_vs_time_graph.svg/600px-Velocity_vs_time_graph.svg.png",
+          caption: "A typical velocity-time graph: showing acceleration (positive gradient), constant velocity (flat line), and deceleration (negative gradient). The area under the curve equals the total displacement.",
+          side: "right"
+        },
       ],
     },
     {

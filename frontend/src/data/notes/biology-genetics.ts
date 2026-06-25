@@ -24,6 +24,12 @@ export const biologyGeneticsNotes: NoteChapter = {
           color: "blue",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/DNA_Simple_Structure.svg/500px-DNA_Simple_Structure.svg.png",
+          caption: "DNA structure: two strands wound in a double helix, with complementary bases (A-T and C-G) held by hydrogen bonds.",
+          side: "right"
+        },
+        {
           kind: "keyterms",
           terms: [
             { label: "Gene", value: "a section of DNA that codes for a specific protein (sequence of amino acids)" },

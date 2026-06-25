@@ -46,6 +46,12 @@ export const physicsSpaceNotes: NoteChapter = {
             },
           ],
         },
+        {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Star_Life_Cycle_Chart.png/600px-Star_Life_Cycle_Chart.png",
+          caption: "The life cycle of stars, illustrating the pathways for both average stars (like our Sun) and massive stars.",
+          side: "right"
+        },
       ],
     },
     {

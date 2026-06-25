@@ -24,6 +24,12 @@ export const chemistryElectrolysisNotes: NoteChapter = {
           color: "blue",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Electrolysis_of_water_plain.svg/500px-Electrolysis_of_water_plain.svg.png",
+          caption: "An electrolysis cell setup: showing the anode (+), cathode (-), DC power supply, and electrolyte solution.",
+          side: "right"
+        },
+        {
           kind: "comparison",
           left: {
             label: "Cathode (negative electrode)",

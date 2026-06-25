@@ -34,6 +34,12 @@ export const chemistryOrganicNotes: NoteChapter = {
           ],
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Crude_Oil_Distillation-en.svg/600px-Crude_Oil_Distillation-en.svg.png",
+          caption: "Fractional distillation of crude oil: separating hydrocarbons into fractions based on their boiling points, with smaller molecules at the top.",
+          side: "right"
+        },
+        {
           kind: "bullets",
           items: [
             {

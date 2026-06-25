@@ -29,6 +29,12 @@ export const chemistryRatesNotes: NoteChapter = {
           color: "blue",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Activation_energy.svg/600px-Activation_energy.svg.png",
+          caption: "Activation energy profile diagram: showing how the activation energy (Ea) barrier is lowered by the presence of a catalyst.",
+          side: "right"
+        },
+        {
           kind: "table",
           headers: ["Factor", "Effect on rate", "Explanation"],
           rows: [

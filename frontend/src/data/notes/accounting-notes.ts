@@ -7,7 +7,7 @@ export const accountingDoubleEntryNotes: NoteChapter = {
     {
       section: "1.1 The Accounting Equation & Double Entry",
       blocks: [
-        { kind: "video", youtubeId: "_HK5gpg39pY", title: "Double Entry Bookkeeping — IGCSE Accounting", caption: "Understanding debits, credits and the accounting equation with worked T-account examples" },
+        { kind: "video", youtubeId: "jMlNcEcHcPY", title: "Accounting Basics — Debits and Credits Explained (AccountingStuff)", caption: "Debits, credits, the accounting equation and how double entry bookkeeping keeps the books balanced" },
         { kind: "intro", text: "**Double entry bookkeeping** records every financial transaction in TWO accounts — a debit in one and an equal credit in another. This keeps the **accounting equation** always balanced." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Principles_of_Accounting.jpg/800px-Principles_of_Accounting.jpg", caption: "The foundation of accounting: every business transaction affects at least two accounts, always keeping Assets = Capital + Liabilities in perfect balance.", side: "full" },
         { kind: "highlight", text: "**The Accounting Equation:**\n\nAssets = Capital + Liabilities\n\nor equivalently:\n\nCapital = Assets − Liabilities\n\nThis equation MUST balance after EVERY single transaction.", color: "blue" },
@@ -34,7 +34,7 @@ export const accountingDoubleEntryNotes: NoteChapter = {
     {
       section: "1.2 Ledger Accounts and the Journal",
       blocks: [
-        { kind: "video", youtubeId: "VhD_HFSJbRo", title: "Ledger Accounts & T-Accounts — IGCSE Accounting", caption: "How to record transactions in T-accounts, balance ledger accounts, and use the journal as a book of prime entry" },
+        { kind: "video", youtubeId: "FZdDKhOp6j8", title: "The Ledger, Journal and T-Accounts Explained (AccountingStuff)", caption: "How to record transactions in T-accounts, post to ledger accounts, and balance them off at the end of a period" },
         { kind: "intro", text: "All transactions are first recorded in the **journal** (book of original entry), then posted to **ledger accounts** (T-accounts). The ledger is organised into: Sales Ledger (customers), Purchases Ledger (suppliers), and General Ledger (all other accounts)." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Ledger-T-Account.png/600px-Ledger-T-Account.png", caption: "A T-Account (ledger account): debit entries on the left, credit entries on the right. The balance is the difference between the two sides — carried down (c/d) and brought down (b/d).", side: "right" },
         { kind: "highlight", text: "**T-Account structure:**\n\n       Dr  |  Account Name  |  Cr\n──────────────────────────────────\nDate Details £   |  Date Details £\n\nBalance c/d = closing balance\nBalance b/d = opening balance for next period", color: "blue" },
@@ -48,7 +48,7 @@ export const accountingDoubleEntryNotes: NoteChapter = {
     {
       section: "1.3 Trial Balance",
       blocks: [
-        { kind: "video", youtubeId: "Pj4QPiHB7HM", title: "Trial Balance — IGCSE Accounting", caption: "How to prepare a trial balance and identify errors it reveals versus errors it cannot detect" },
+        { kind: "video", youtubeId: "MvE9h7QpJV0", title: "The Trial Balance Explained (AccountingStuff)", caption: "How to extract and prepare a trial balance from ledger accounts and what errors it reveals versus errors it misses" },
         { kind: "intro", text: "The **Trial Balance** is a list of all ledger account balances at a point in time. Total debits MUST equal total credits. It is NOT a financial statement — it checks for arithmetic errors only." },
         { kind: "highlight", text: "**Trial balance format:**\n\nAccount Name          | Dr (£) | Cr (£)\n──────────────────────────────────────\nPremises              |  50,000 |\nMachinery             |  20,000 |\nBank                  |   5,000 |\nInventory             |   8,000 |\nTrade receivables     |   4,000 |\nCapital               |         |  60,000\nBank loan             |         |  15,000\nTrade payables        |         |   6,000\nSales                 |         |  40,000\nWages                 |  20,000 |\nRent paid             |  14,000 |\n──────────────────────────────────────\nTOTAL                 | 121,000 | 121,000 ✓", color: "blue" },
         { kind: "comparison", left: { label: "Errors REVEALED by trial balance", items: ["Single entry (one side of double entry missing)", "Posting to wrong side of an account", "Arithmetic error in balancing a ledger account", "Account balance omitted from trial balance"] }, right: { label: "Errors NOT revealed (trial balance still balances)", items: ["Omission: transaction not recorded at all", "Commission: correct amount, wrong person's account", "Principle: revenue/capital expenditure confused", "Compensating: two equal and opposite errors cancel out", "Reversal: debit and credit entries swapped but equal"] } },
@@ -65,7 +65,7 @@ export const accountingFinancialStatementsNotes: NoteChapter = {
     {
       section: "2.1 Income Statement (Profit & Loss Account)",
       blocks: [
-        { kind: "video", youtubeId: "FiLDYrQGOCw", title: "Income Statement — IGCSE Accounting", caption: "Preparing an income statement step-by-step: revenue, cost of sales, gross profit and net profit" },
+        { kind: "video", youtubeId: "ptMbtS4HqNk", title: "Income Statement Explained (AccountingStuff)", caption: "How to prepare an income statement step by step: revenue, cost of sales, gross profit and net profit with adjustments" },
         { kind: "intro", text: "The **Income Statement** shows the revenue earned and expenses incurred over a period, resulting in net profit or net loss." },
         { kind: "highlight", text: "**Income Statement structure:**\n\n Revenue (Sales)                  ____\n− Cost of Sales                   ____\n= GROSS PROFIT                    ____\n\n− Expenses (wages, rent, insurance, depreciation…) ____\n= NET PROFIT (or NET LOSS)        ____\n\n**Cost of Sales = Opening Inventory + Purchases − Returns Outwards − Closing Inventory**", color: "blue" },
         { kind: "keyterms", terms: [
@@ -83,7 +83,7 @@ export const accountingFinancialStatementsNotes: NoteChapter = {
     {
       section: "2.2 Statement of Financial Position (Balance Sheet)",
       blocks: [
-        { kind: "video", youtubeId: "aqaHBk6TVKM", title: "Balance Sheet — IGCSE Accounting", caption: "How to prepare and interpret a statement of financial position (balance sheet) in vertical format" },
+        { kind: "video", youtubeId: "WEDIj9JBTC8", title: "Balance Sheet / Statement of Financial Position Explained (AccountingStuff)", caption: "How to prepare a balance sheet in vertical format: non-current assets, current assets, liabilities and capital" },
         { kind: "intro", text: "The **Statement of Financial Position** shows the financial position at a SPECIFIC DATE — what the business owns (assets), what it owes (liabilities), and the resulting capital." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Simple_balance_sheet.png/600px-Simple_balance_sheet.png", caption: "Balance sheet: assets on one side, liabilities + capital on the other. The two sides always balance because Capital = Assets − Liabilities.", side: "right" },
         { kind: "highlight", text: "**Balance Sheet (vertical format):**\n\nNon-current assets (premises, machinery, vehicles) ____\n+ Current assets (inventory, receivables, bank, cash) ____\n= TOTAL ASSETS ____\n\n− Current liabilities (payables, overdraft, accruals) ____\n− Non-current liabilities (bank loan, mortgage)       ____\n= NET ASSETS ____\n\n= CAPITAL (opening + net profit − drawings) ____", color: "blue" },
@@ -94,7 +94,7 @@ export const accountingFinancialStatementsNotes: NoteChapter = {
     {
       section: "2.3 Depreciation",
       blocks: [
-        { kind: "video", youtubeId: "Mz2ATDQK0kY", title: "Depreciation Explained — IGCSE Accounting (Straight-Line & Reducing Balance)", caption: "How to calculate depreciation using both methods, record it in accounts, and show it on the balance sheet" },
+        { kind: "video", youtubeId: "6nIVbwEr5Fs", title: "Depreciation Explained — Straight Line vs Reducing Balance (AccountingStuff)", caption: "How to calculate depreciation using straight-line and reducing balance methods, record in ledgers and show on the balance sheet" },
         { kind: "intro", text: "**Depreciation** is the systematic reduction in value of a non-current asset over its useful life. It ensures assets are shown at a realistic value and costs are matched to the periods they benefit." },
         { kind: "comparison", left: { label: "Straight-line method", items: ["Equal charge each year", "Formula: (Cost − Residual value) ÷ Useful life", "Example: cost $10,000; residual $2,000; 4 years → $2,000/year", "Best for assets used evenly over time (e.g. office equipment)", "Simple to calculate"] }, right: { label: "Reducing balance method", items: ["Fixed PERCENTAGE applied to NET BOOK VALUE each year", "Higher depreciation early, lower later", "Formula: NBV × rate%", "Example: NBV $10,000; 20% → Year 1: $2,000; Year 2: $1,600; Year 3: $1,280", "Never reaches zero"] } },
         { kind: "highlight", text: "**Key depreciation terms:**\n• **Cost** — original purchase price\n• **Residual value** — estimated value at end of useful life ('scrap value')\n• **Net Book Value (NBV)** = Cost − Accumulated Depreciation\n• **Accumulated depreciation** — total depreciation charged to date\n• **Provision for depreciation account** — credit balance; recorded separately from the asset account", color: "green" },
@@ -111,7 +111,7 @@ export const accountingCashFlowNotes: NoteChapter = {
     {
       section: "3.1 Cash Flow Statements",
       blocks: [
-        { kind: "video", youtubeId: "5VyTbhCpOhk", title: "Cash Flow Statement — IGCSE Accounting", caption: "How to prepare a cash flow statement, identify inflows and outflows, and understand cash vs profit" },
+        { kind: "video", youtubeId: "Xn7hGMEjqX8", title: "Cash Flow Statement Explained — Inflows vs Outflows (AccountingStuff)", caption: "How to prepare a cash flow statement, identify cash inflows and outflows, and understand why profit does not equal cash" },
         { kind: "intro", text: "A **cash flow statement** shows the actual movement of cash into and out of a business. A business can be profitable but still run out of cash — making cash flow management critical for survival." },
         { kind: "image", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Cash_flow_statement.png/600px-Cash_flow_statement.png", caption: "Cash flow statement structure: operating activities + investing activities + financing activities = net change in cash. Opening + net change = closing cash balance.", side: "right" },
         { kind: "comparison", left: { label: "Cash inflows (+)", items: ["Cash sales", "Receipts from trade receivables (credit customers paying)", "Sale of non-current assets", "Owner's additional capital invested", "Bank loans received"] }, right: { label: "Cash outflows (−)", items: ["Cash purchases of inventory", "Payments to trade payables (suppliers)", "Purchase of non-current assets", "Wages and salaries paid", "Loan repayments and interest", "Owner's drawings"] } },
@@ -122,7 +122,7 @@ export const accountingCashFlowNotes: NoteChapter = {
     {
       section: "3.2 Accounting Ratios",
       blocks: [
-        { kind: "video", youtubeId: "1Z0Cz0-DPVI", title: "Accounting Ratios — IGCSE Accounting (Profitability, Liquidity, Efficiency)", caption: "How to calculate and interpret gross profit margin, net profit margin, ROCE, current ratio, quick ratio and more" },
+        { kind: "video", youtubeId: "EId8EVjBxzQ", title: "Financial Ratios Explained — Profitability, Liquidity and Efficiency (AccountingStuff)", caption: "How to calculate and interpret gross profit margin, net profit margin, ROCE, current ratio, quick ratio and inventory turnover" },
         { kind: "intro", text: "**Accounting ratios** analyse financial performance and position. They allow comparison between years and between businesses." },
         { kind: "table", headers: ["Ratio", "Formula", "What it measures"], rows: [
           ["Gross profit margin", "(Gross Profit ÷ Revenue) × 100", "% of each $1 of sales remaining as gross profit"],

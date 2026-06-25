@@ -8,6 +8,12 @@ export const mathematicsStatisticsNotes: NoteChapter = {
       section: "8.1 Averages & Spread",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "3mJ49e2gBZs",
+          title: "Mean, Median, Mode & Range — GCSE Maths (Cognito)",
+          caption: "How to calculate and compare averages (mean, median, mode) and spread (range)."
+        },
+        {
           kind: "table",
           headers: ["Measure", "Definition", "Formula / Method"],
           rows: [
@@ -60,6 +66,12 @@ export const mathematicsStatisticsNotes: NoteChapter = {
           kind: "highlight",
           text: "Box plot shows: minimum | Q1 | median | Q3 | maximum\nThe box spans Q1 to Q3 (IQR). The whiskers extend to min and max (or 1.5×IQR for outliers).",
           color: "green",
+        },
+        {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Elements_of_a_boxplot.svg/500px-Elements_of_a_boxplot.svg.png",
+          caption: "Elements of a box plot: minimum, lower quartile (Q1), median, upper quartile (Q3), and maximum.",
+          side: "right"
         },
         {
           kind: "warning",

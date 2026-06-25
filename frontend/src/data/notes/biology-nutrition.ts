@@ -51,6 +51,12 @@ export const biologyNutritionNotes: NoteChapter = {
           color: "blue",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Digestive_system_diagram_edit.svg/600px-Digestive_system_diagram_edit.svg.png",
+          caption: "The human digestive system: from the mouth, down the oesophagus, through the stomach, and into the small and large intestines.",
+          side: "right"
+        },
+        {
           kind: "table",
           headers: ["Organ", "Role", "Enzymes produced"],
           rows: [

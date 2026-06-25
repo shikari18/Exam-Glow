@@ -48,6 +48,12 @@ export const physicsElectricityNotes: NoteChapter = {
       section: "4.2 Series & Parallel Circuits",
       blocks: [
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Series_and_parallel_circuits.svg/600px-Series_and_parallel_circuits.svg.png",
+          caption: "A comparison of series (components in a single loop) and parallel (components in multiple branches) circuit configurations.",
+          side: "right"
+        },
+        {
           kind: "comparison",
           left: {
             label: "Series circuit",

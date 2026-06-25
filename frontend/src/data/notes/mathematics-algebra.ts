@@ -81,6 +81,12 @@ export const mathematicsAlgebraNotes: NoteChapter = {
           color: "blue",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Parabola_with_roots.svg/500px-Parabola_with_roots.svg.png",
+          caption: "A quadratic graph (parabola) y = ax² + bx + c, showing the two roots (x-intercepts) where ax² + bx + c = 0.",
+          side: "right"
+        },
+        {
           kind: "bullets",
           items: [
             {

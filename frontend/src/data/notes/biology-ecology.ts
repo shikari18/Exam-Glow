@@ -59,6 +59,12 @@ export const biologyEcologyNotes: NoteChapter = {
           text: "Nutrients are recycled through ecosystems. The carbon cycle and nitrogen cycle are the most important for IGCSE.",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Simple_carbon_cycle_diagram.svg/800px-Simple_carbon_cycle_diagram.svg.png",
+          caption: "The Carbon Cycle: Photosynthesis removes carbon dioxide from the atmosphere, while respiration, combustion, and decomposition return it.",
+          side: "right"
+        },
+        {
           kind: "bullets",
           items: [
             {

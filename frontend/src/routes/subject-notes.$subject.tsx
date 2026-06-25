@@ -355,7 +355,7 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
       );
 
     case "image":
-      if (block.side === "full") {
+      if (block.side === "full" || !block.side) {
         return <ImageBlock block={block} />;
       }
       return null;

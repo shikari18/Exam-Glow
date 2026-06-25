@@ -105,6 +105,12 @@ export const biologyNervousNotes: NoteChapter = {
           color: "blue",
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Schematic_diagram_of_the_human_eye_en.svg/600px-Schematic_diagram_of_the_human_eye_en.svg.png",
+          caption: "Cross-section of the human eye: showing the cornea, lens, iris, fovea, and optic nerve.",
+          side: "right"
+        },
+        {
           kind: "table",
           headers: ["Structure", "Function"],
           rows: [

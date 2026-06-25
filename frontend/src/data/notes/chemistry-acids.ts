@@ -23,6 +23,12 @@ export const chemistryAcidsNotes: NoteChapter = {
           ],
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/PH_scale_with_everyday_objects.svg/800px-PH_scale_with_everyday_objects.svg.png",
+          caption: "The pH scale from 0 to 14, showing the acidity and alkalinity of common everyday objects.",
+          side: "right"
+        },
+        {
           kind: "table",
           headers: ["pH", "Description", "Examples"],
           rows: [

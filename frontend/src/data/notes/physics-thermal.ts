@@ -84,6 +84,12 @@ export const physicsThermalNotes: NoteChapter = {
           ],
         },
         {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Heat_transfer.svg/600px-Heat_transfer.svg.png",
+          caption: "The three main methods of heat transfer: conduction, convection, and radiation.",
+          side: "right"
+        },
+        {
           kind: "bullets",
           items: [
             {

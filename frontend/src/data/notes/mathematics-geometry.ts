@@ -8,6 +8,18 @@ export const mathematicsGeometryNotes: NoteChapter = {
       section: "3.1 Circle Theorems",
       blocks: [
         {
+          kind: "video",
+          youtubeId: "n4m5y99Uj5E",
+          title: "Circle Theorems — GCSE & IGCSE Maths (Cognito)",
+          caption: "Comprehensive walkthrough of all 7 circle theorems with proofs and examples"
+        },
+        {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Alternate_segment_theorem.svg/500px-Alternate_segment_theorem.svg.png",
+          caption: "The Alternate Segment Theorem: The angle between a tangent and a chord is equal to the angle subtended by the chord in the alternate segment.",
+          side: "right"
+        },
+        {
           kind: "intro",
           text: "Circle theorems describe angle relationships in circles. You must state the theorem used in every proof.",
         },
@@ -38,6 +50,18 @@ export const mathematicsGeometryNotes: NoteChapter = {
     {
       section: "3.2 Pythagoras & Trigonometry",
       blocks: [
+        {
+          kind: "video",
+          youtubeId: "15p8L3n9D4g",
+          title: "Trigonometry & Pythagoras — GCSE & IGCSE Maths (Cognito)",
+          caption: "How to use Pythagoras' theorem, SOHCAHTOA, Sine Rule, Cosine Rule and Area of a Triangle"
+        },
+        {
+          kind: "image",
+          src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Trigonometry_triangle_definitions.svg/600px-Trigonometry_triangle_definitions.svg.png",
+          caption: "Right-angled triangle definitions for sine, cosine, and tangent relative to angle θ.",
+          side: "right"
+        },
         {
           kind: "highlight",
           text: "Pythagoras: a² + b² = c² (right-angled triangles only, c = hypotenuse)\nSOHCAHTOA: Sin=Opp/Hyp, Cos=Adj/Hyp, Tan=Opp/Adj",
