@@ -216,16 +216,16 @@ export function speakSingleTurn(
 }
 
 /**
- * Plays a sequence of speech turns one after another.
- * Each turn fires onTurnStart, then when done the next starts.
- * Uses pre-connected Gemini sockets with pre-buffered audio stream chunks for minimum latency.
+ * Internal implementation of speech conversation player.
+ * @param stopFirst - if true, calls stopAllSpeech() before starting
  */
-export function playSpeechConversation(
+function _playSpeechConversationImpl(
   turns: SpeechTurn[],
   onTurnStart: (turnIndex: number) => void,
-  onComplete: () => void
+  onComplete: () => void,
+  stopFirst: boolean
 ): SpeechController {
-  stopAllSpeech();
+  if (stopFirst) stopAllSpeech();
 
   let currentTurnIndex = 0;
   let stopped = false;
@@ -331,4 +331,30 @@ export function playSpeechConversation(
       onComplete();
     },
   };
+}
+
+/**
+ * Plays a sequence of speech turns one after another.
+ * Each turn fires onTurnStart, then when done the next starts.
+ * Uses pre-connected Gemini sockets with pre-buffered audio stream chunks for minimum latency.
+ */
+export function playSpeechConversation(
+  turns: SpeechTurn[],
+  onTurnStart: (turnIndex: number) => void,
+  onComplete: () => void
+): SpeechController {
+  return _playSpeechConversationImpl(turns, onTurnStart, onComplete, true);
+}
+
+/**
+ * Like playSpeechConversation but does NOT call stopAllSpeech() first.
+ * Use this when you are chaining pages sequentially and already managing
+ * the previous audio controller yourself.
+ */
+export function playSpeechConversationChained(
+  turns: SpeechTurn[],
+  onTurnStart: (turnIndex: number) => void,
+  onComplete: () => void
+): SpeechController {
+  return _playSpeechConversationImpl(turns, onTurnStart, onComplete, false);
 }

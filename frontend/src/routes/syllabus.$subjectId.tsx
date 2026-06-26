@@ -9,7 +9,7 @@ import {
   Plus, Minus, BookOpen, MessageCircleQuestion, Square
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { playSpeechConversation, stopAllSpeech, speakSingleTurn, type SpeechTurn } from "@/lib/speech-utils";
+import { playSpeechConversation, playSpeechConversationChained, stopAllSpeech, speakSingleTurn, type SpeechTurn } from "@/lib/speech-utils";
 import { groqAsk } from "@/lib/groq-client";
 
 export const Route = createFileRoute("/syllabus/$subjectId")({
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/syllabus/$subjectId")({
 
 // Helper to clean "Cambridge" out of the name
 function cleanSubjectName(name: string): string {
-  return name.replace(/^Cambridge\s+/i, "").replace(/^IGCSE\s+/i);
+  return name.replace(/^Cambridge\s+/i, "").replace(/^IGCSE\s+/i, "");
 }
 
 // ── Subject Categorizer ──
@@ -304,7 +304,7 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
   // AI Chat States
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "smith" | "jones"; text: string; speaker?: string; imageUrl?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "smith" | "jones" | "yumna"; text: string; speaker?: string; imageUrl?: string }>>([]);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [audioState, setAudioState] = useState<"idle" | "speaking" | "teaching">("idle");
@@ -419,46 +419,58 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
     return `Syllabus page ${pageNum}.`;
   };
 
-  // Generate a 6-turn teaching script for one page via Groq
-  interface TeachTurn extends SpeechTurn { needsImage?: boolean; }
+  // Generate an 8-turn teaching script for one page via Groq
+  // Includes Yumna (3rd character) as the AI image specialist
+  interface TeachTurn extends SpeechTurn {
+    needsImage?: boolean;
+    imagePrompt?: string; // Yumna image-generation turns carry this
+    isYumna?: boolean;    // true for Yumna's turns
+  }
 
   const generatePageScript = async (pageNum: number, contentSummary: string): Promise<TeachTurn[]> => {
     const pageTitle = getPageTitle(pageNum);
-    const systemPrompt = `You are writing an educational podcast script. Two human professors are teaching the student who is listening to this lesson. Never mention Gemini, Google, or any AI models. Sophia and Marcus are real human professors, not AI agents. They should have a very bright, cheery, encouraging, and friendly personality, celebrating the student's learning!
-Prof. Sophia Jones (female, warm, cheery, encouraging, explains core concepts with real-world analogies) and Dr. Marcus Smith (male, deep-voiced, analytical, enthusiastic, friendly, breaks down exam objectives and key terms).Dialogues must flow like a real conversation.
-They must explicitly talk TO the student, breaking down key syllabus topics from the current page, and staying strictly on-point.
-The dialogue must flow like a real conversation between two co-teachers:
-- Sophia speaks first, introducing a concept and explaining it with a real-world analogy.
-- Marcus asks Sophia a direct clarifying question about it.
-- Sophia answers his question, and then asks Marcus to explain a related detail or next sub-topic.
-- Marcus answers and teaches that detail with deep analytical insight.
-- They take turns explaining and asking/answering questions, rather than one person asking and answering their own question.
-Output ONLY a raw JSON array of turns.`;
+    const systemPrompt = `You are writing an educational podcast script for THREE human professors teaching IGCSE students. Never mention Gemini, Google, or AI models.
 
-    const userPrompt = `Write a 6-turn interactive teaching script for Page ${pageNum} ("${pageTitle}") of IGCSE ${cleanName} (${subjectCode}).
-    
-Current Page Content:
+The three professors are:
+1. Prof. Sophia Jones (female) — warm, cheery, uses real-world analogies to explain concepts.
+2. Dr. Marcus Smith (male) — analytical, deep-voiced, enthusiastic, breaks down exam details and key terms.
+3. Yumna Hassan (female) — the visual learning specialist. She ONLY speaks when Sophia or Marcus explicitly says "Yumna, generate an image of [topic]" — she then briefly agrees and describes what she will visualize. She does NOT teach on her own.
+
+Rules:
+- Sophia and Marcus carry the teaching dialogue naturally.
+- Once during the page, ONE of them says "Yumna, generate an image of [specific topic from this page] to help the student visualize this." — this should be turn 5 or 6.
+- Yumna replies with 1 short sentence confirming she will create the visual, e.g. "Sure! Here's a clear diagram showing [topic]." — this is a Yumna turn.
+- Sophia or Marcus then continues after Yumna.
+- Output ONLY a raw JSON array. No markdown, no backticks.`;
+
+    const userPrompt = `Write an 8-turn teaching script for Page ${pageNum} ("${pageTitle}") of IGCSE ${cleanName} (${subjectCode}).
+
+Page Content:
 ${contentSummary}
 
-Strict script guidelines:
-- Turn 1: Prof. Sophia Jones — introduces the page's core topic, explaining it clearly with a real-world analogy (2-3 sentences, speaking to the student).
-- Turn 2: Dr. Marcus Smith — asks Sophia a direct clarifying question about what she just explained (1-2 sentences).
-- Turn 3: Prof. Sophia Jones — answers Marcus's question clearly, then asks Marcus to explain the next key syllabus point/objective on this page (2-3 sentences).
-- Turn 4: Dr. Marcus Smith — answers Sophia's question, teaching that key syllabus objective in detail (2-3 sentences).
-- Turn 5: Prof. Sophia/Dr. Marcus — explains a high-yield exam tip, diagram, or common student pitfall for this page (2-3 sentences). Set "needsImage": true on this turn if it contains a graph, cycle, equation, or complex process.
-- Turn 6: The other professor — summarizes the key takeaway of this page in 2 sentences.
+Turn structure:
+- Turn 1: Prof. Sophia Jones — introduces core topic with a real-world analogy (2-3 sentences).
+- Turn 2: Dr. Marcus Smith — asks Sophia a clarifying question about it (1-2 sentences).
+- Turn 3: Prof. Sophia Jones — answers, then asks Marcus to explain the next key point (2-3 sentences).
+- Turn 4: Dr. Marcus Smith — explains that key point analytically (2-3 sentences).
+- Turn 5: Prof. Sophia Jones OR Dr. Marcus Smith — says "Yumna, generate an image of [specific visual topic from this page] to help the student understand." (1 sentence exactly — just this request).
+- Turn 6: Yumna Hassan — says "Sure! Here's a clear diagram showing [topic]." (1 sentence, isYumna: true, imagePrompt: "[exact topic for image]").
+- Turn 7: The other professor (Sophia or Marcus) — continues teaching an exam tip or common pitfall (2-3 sentences).
+- Turn 8: The remaining professor — summarizes the key takeaway of this page (1-2 sentences).
 
-Output ONLY this JSON array format (no markdown code blocks, no backticks, no other text):
+Output ONLY this JSON format (no markdown, no backticks, no extra text):
 [
   {"speaker":"Prof. Sophia Jones","gender":"female","text":"..."},
   {"speaker":"Dr. Marcus Smith","gender":"male","text":"..."},
   {"speaker":"Prof. Sophia Jones","gender":"female","text":"..."},
   {"speaker":"Dr. Marcus Smith","gender":"male","text":"..."},
-  {"speaker":"Prof. Sophia/Dr. Marcus","gender":"female/male","text":"...", "needsImage":true/false},
-  {"speaker":"Prof. Sophia/Dr. Marcus","gender":"female/male","text":"..."}
+  {"speaker":"Prof. Sophia Jones","gender":"female","text":"Yumna, generate an image of [specific topic] to help the student understand."},
+  {"speaker":"Yumna Hassan","gender":"female","text":"Sure! Here's a clear diagram showing [topic].","isYumna":true,"imagePrompt":"[topic]"},
+  {"speaker":"Dr. Marcus Smith","gender":"male","text":"..."},
+  {"speaker":"Prof. Sophia Jones","gender":"female","text":"..."}
 ]`;
 
-    const raw = await groqAsk(systemPrompt, userPrompt, { max_tokens: 1400, temperature: 0.72 });
+    const raw = await groqAsk(systemPrompt, userPrompt, { max_tokens: 1800, temperature: 0.72 });
     let json = raw.trim();
     if (json.startsWith("```")) json = json.replace(/^```(json)?/, "").replace(/```$/, "").trim();
     const s = json.indexOf("["); const e = json.lastIndexOf("]");
@@ -1047,28 +1059,27 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
       setAudioState("speaking");
       audioControllerRef.current = speakSingleTurn(
         explanationText,
-        "male", // Male voice (maps to Fenrir deep voice)
+        "male",
         () => {},
-        () => {
-          setAudioState("idle");
-        }
+        () => { setAudioState("idle"); }
       );
     } catch (err) {
       console.error("Teach Me generation failed", err);
       setIsTyping(false);
       setMessages(prev => [
         ...prev,
-        { role: "assistant", text: `❌ AI Tutor error: ${err instanceof Error ? err.message : "Unknown error"}. Make sure your VITE_GROQ_API_KEY is set correctly in frontend/.env` }
+        { role: "assistant", text: `❌ AI Tutor error: ${err instanceof Error ? err.message : "Unknown error"}.` }
       ]);
     }
   };
 
-  // ── 30-Minute All-Pages AI Teaching Session ──
+  // ── 45-Minute All-Pages AI Teaching Session (3 Professors) ──
   const handleAiTeach = async () => {
     // Stop any active session
     sessionIdRef.current++;
     const mySession = sessionIdRef.current;
     if (audioControllerRef.current) { audioControllerRef.current.stop(); audioControllerRef.current = null; }
+    stopAllSpeech();
     if (teachTimerRef.current) clearInterval(teachTimerRef.current);
     setAudioState("idle");
     setSpeakingTurnIndex(null);
@@ -1077,9 +1088,9 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
     setTeachingPageNum(null);
 
     setAiChatOpen(true);
-    setMessages([{ role: "assistant", text: `🎓 **40-Minute Teaching Session**\nProf. Sophia Jones & Dr. Marcus Smith will now teach you every page of the IGCSE ${cleanName} syllabus from start to finish. Sit back, listen, and learn!` }]);
+    setMessages([{ role: "assistant", text: `🎓 **45-Minute Teaching Session**\nProf. Sophia Jones, Dr. Marcus Smith & Yumna Hassan (Visual Specialist) will now teach you every page of the IGCSE ${cleanName} syllabus. Sit back, listen, and learn!` }]);
     setAudioState("teaching");
-    startTeachTimer(2400);
+    startTeachTimer(2700);
 
     for (let pg = 1; pg <= totalPages; pg++) {
       if (sessionIdRef.current !== mySession) break;
@@ -1110,20 +1121,62 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
 
       if (sessionIdRef.current !== mySession) break;
 
-      // Play all turns for this page and wait for completion
+      // Separate Yumna image turns from speech turns
+      // Yumna's turns are handled inline (image generation) not spoken in the queue
+      // Build speech-only turns and a map of where Yumna turns fall
+      const speechTurns: (TeachTurn & { originalIdx: number })[] = [];
+      const yumnaTurns: { originalIdx: number; turn: TeachTurn }[] = [];
+      turns.forEach((t, i) => {
+        if (t.isYumna) {
+          yumnaTurns.push({ originalIdx: i, turn: t });
+        } else {
+          speechTurns.push({ ...t, originalIdx: i });
+        }
+      });
+
+      // Before each speech turn that immediately precedes a Yumna turn, we inject the image
+      // We track global turn index via a counter that includes Yumna turns
+      let speechTurnOffset = 0; // how many non-Yumna turns have been spoken so far
+
+      // Play all speech turns sequentially using chained (no stopAllSpeech between pages)
+      // Use playSpeechConversationChained from page 2 onwards so audio doesn't get killed
       await new Promise<void>((resolve) => {
-        const ctrl = playSpeechConversation(
-          turns,
-          (idx) => {
+        const playFn = pg === 1 ? playSpeechConversation : playSpeechConversationChained;
+        const ctrl = playFn(
+          speechTurns,
+          (speechIdx) => {
             if (sessionIdRef.current !== mySession) { ctrl.stop(); return; }
-            setSpeakingTurnIndex(idx);
-            const turn = turns[idx] as TeachTurn;
+            const turn = speechTurns[speechIdx];
+            const originalIdx = turn.originalIdx;
+
+            // Compute global speaking index (accounting for Yumna turns before this)
+            const globalIdx = originalIdx;
+            setSpeakingTurnIndex(speechIdx);
+
+            // Add the speech turn to chat
+            const role: "jones" | "smith" = turn.gender === "female" ? "jones" : "smith";
             setMessages(prev => [...prev, {
-              role: turn.gender === "female" ? "jones" : "smith",
+              role,
               text: turn.text,
               speaker: turn.speaker,
-              imageUrl: (turn.needsImage || idx === 4) ? buildImageUrl(turn.text.split(".")[0], cleanName) : undefined
             }]);
+
+            // Check if the NEXT original turn is a Yumna turn → generate her image now
+            const nextOriginalIdx = originalIdx + 1;
+            const yumnaNext = yumnaTurns.find(y => y.originalIdx === nextOriginalIdx);
+            if (yumnaNext) {
+              const yTurn = yumnaNext.turn;
+              const imageTopic = yTurn.imagePrompt || yTurn.text.split("showing")[1]?.trim() || turn.text.split(".")[0];
+              const imgUrl = buildImageUrl(imageTopic, cleanName);
+              // Add Yumna's message card with the generated image
+              setMessages(prev => [...prev, {
+                role: "yumna",
+                text: yTurn.text,
+                speaker: "Yumna Hassan",
+                imageUrl: imgUrl,
+              }]);
+              setSpeakingTurnIndex(-1); // -1 signals Yumna is active
+            }
           },
           () => { resolve(); }
         );
@@ -1789,16 +1842,16 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                 const isUser = msg.role === "user";
                 const isSmith = msg.role === "smith";
                 const isJones = msg.role === "jones";
+                const isYumna = msg.role === "yumna";
                 
-                // During teaching mode, don't render the dialogue turns as chat bubbles
+                // During teaching mode: hide Sophia/Marcus dialogue bubbles (shown in immersive card)
+                // but SHOW Yumna's image cards in the stream
                 if (audioState === "teaching" && (isSmith || isJones)) {
                   return null;
                 }
                 
                 let bgClass = "bg-slate-100 text-slate-800";
                 let alignClass = "justify-start";
-                let avatarColor = "bg-purple-100 text-purple-700";
-                let avatarLetter = "T";
                 let label = msg.speaker || "AI Tutor";
 
                 if (isUser) {
@@ -1807,12 +1860,11 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                   label = "You";
                 } else if (isSmith) {
                   bgClass = "bg-blue-50 text-blue-900 border border-blue-100";
-                  avatarColor = "bg-blue-500 text-white";
-                  avatarLetter = "S";
                 } else if (isJones) {
                   bgClass = "bg-rose-50 text-rose-900 border border-rose-100";
-                  avatarColor = "bg-rose-500 text-white";
-                  avatarLetter = "J";
+                } else if (isYumna) {
+                  bgClass = "bg-purple-50 text-purple-900 border border-purple-200";
+                  label = "Yumna Hassan 🎨";
                 }
 
                 // Highlight the most recently added smith/jones turn while speaking
@@ -1820,6 +1872,7 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                 const mySmithJonesIdx = isSmith || isJones ? smithJonesMsgs.indexOf(msg) : -1;
                 const isActiveSpeaking = speakingTurnIndex !== null && mySmithJonesIdx === speakingTurnIndex;
                 const isTutorSpeaking = msg.role === "assistant" && audioState === "speaking" && idx === messages.length - 1;
+                const isYumnaActive = isYumna && speakingTurnIndex === -1 && idx === messages.length - 1;
 
                 return (
                   <div key={idx} className={`flex ${alignClass} items-end gap-2 animate-fade-in`}>
@@ -1828,20 +1881,25 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                         {label} {(isActiveSpeaking || isTutorSpeaking) && <span className="text-amber-500">🗣️</span>}
                       </span>
                       <div className={`px-3 py-2 rounded-2xl text-[11px] leading-[1.55] shadow-sm ${bgClass} ${
-                        (isActiveSpeaking || isTutorSpeaking) ? "ring-2 ring-amber-400" : ""
+                        (isActiveSpeaking || isTutorSpeaking) ? "ring-2 ring-amber-400" :
+                        isYumnaActive ? "ring-2 ring-purple-400" : ""
                       }`}>
                         {renderStructuredContent(msg.text)}
                       </div>
                       {/* Inline image if this turn has a visual */}
                       {msg.imageUrl && (
-                        <div className="mt-1.5 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                        <div className={`mt-1.5 rounded-xl overflow-hidden shadow-sm ${
+                          isYumna ? "border-2 border-purple-200" : "border border-slate-200"
+                        }`}>
                           <img
                             src={msg.imageUrl}
                             alt="Educational diagram"
-                            className="w-full object-cover max-h-40"
+                            className="w-full object-cover max-h-48"
                             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                           />
-                          <p className="text-[9px] text-center text-slate-400 py-1 bg-slate-50">AI-generated visual aid</p>
+                          <p className={`text-[9px] text-center py-1 ${
+                            isYumna ? "bg-purple-50 text-purple-500 font-semibold" : "bg-slate-50 text-slate-400"
+                          }`}>{isYumna ? "🎨 Yumna's visual diagram" : "AI-generated visual aid"}</p>
                         </div>
                       )}
                     </div>
@@ -1859,38 +1917,41 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
               {/* Active Speaker Immersive Card during Teaching */}
               {audioState === "teaching" && speakingTurnIndex !== null && (
                 (() => {
-                  const speakMsgs = messages.filter(m => m.role === "smith" || m.role === "jones");
-                  const activeMsg = speakMsgs[speakingTurnIndex];
-                  if (!activeMsg) return null;
+                  const speakMsgs = messages.filter(m => m.role === "smith" || m.role === "jones" || m.role === "yumna");
+                  const isYumnaActive = speakingTurnIndex === -1;
+                  const activeMsg = isYumnaActive
+                    ? messages.filter(m => m.role === "yumna").at(-1)
+                    : speakMsgs[speakingTurnIndex];
+                  if (!activeMsg && !isYumnaActive) return null;
 
-                  const isSophia = activeMsg.role === "jones";
+                  const isSophia = !isYumnaActive && activeMsg?.role === "jones";
+                  const isMarcus = !isYumnaActive && activeMsg?.role === "smith";
 
                   return (
                     <div className="mx-3 mb-3 bg-slate-50 border border-slate-200/85 rounded-2xl p-4 flex flex-col gap-4 shadow-sm select-none animate-fade-in">
-                      {/* Two Teachers Side-by-Side */}
-                      <div className="grid grid-cols-2 gap-3">
+                      {/* Three Teachers Side-by-Side */}
+                      <div className="grid grid-cols-3 gap-2">
                         {/* Sophia Jones Card */}
-                        <div className={`p-3 rounded-xl border transition-all duration-355 flex flex-col items-center text-center ${
-                          isSophia 
-                            ? "bg-white border-rose-400 shadow-md shadow-rose-100 scale-[1.03] ring-1 ring-rose-300"
-                            : "bg-slate-100/60 border-slate-250 opacity-60 scale-100"
+                        <div className={`p-2.5 rounded-xl border transition-all duration-300 flex flex-col items-center text-center ${
+                          isSophia
+                            ? "bg-white border-rose-400 shadow-md shadow-rose-100 scale-[1.04] ring-1 ring-rose-300"
+                            : "bg-slate-100/60 border-slate-200 opacity-55 scale-100"
                         }`}>
-                          <div className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-bold shadow-sm relative ${
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm relative ${
                             isSophia ? "bg-rose-500 text-white animate-pulse" : "bg-slate-400 text-white"
                           }`}>
-                            J
+                            SJ
                             {isSophia && (
                               <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500" />
                               </span>
                             )}
                           </div>
-                          <h5 className="text-[11px] font-bold text-slate-800 mt-2">Prof. Sophia Jones</h5>
-                          <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">Analogy Expert</span>
-                          
+                          <h5 className="text-[10px] font-bold text-slate-800 mt-1.5 leading-tight">Prof. Sophia Jones</h5>
+                          <span className="text-[8px] font-semibold text-slate-400 block mt-0.5">Analogies</span>
                           {isSophia && (
-                            <div className="flex items-center gap-0.5 h-3 px-1.5 py-0.5 bg-rose-50 rounded-md border border-rose-100 mt-2">
+                            <div className="flex items-center gap-0.5 h-3 px-1 bg-rose-50 rounded-md border border-rose-100 mt-1.5">
                               <span className="w-0.5 bg-rose-500 rounded-full h-1.5" style={{ animation: "wave 1.2s ease-in-out infinite alternate" }} />
                               <span className="w-0.5 bg-rose-500 rounded-full h-2.5" style={{ animation: "wave 0.8s ease-in-out infinite alternate 0.2s" }} />
                               <span className="w-0.5 bg-rose-500 rounded-full h-1" style={{ animation: "wave 1.0s ease-in-out infinite alternate 0.4s" }} />
@@ -1899,48 +1960,73 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                         </div>
 
                         {/* Marcus Smith Card */}
-                        <div className={`p-3 rounded-xl border transition-all duration-355 flex flex-col items-center text-center ${
-                          !isSophia 
-                            ? "bg-white border-blue-400 shadow-md shadow-blue-100 scale-[1.03] ring-1 ring-blue-300"
-                            : "bg-slate-100/60 border-slate-250 opacity-60 scale-100"
+                        <div className={`p-2.5 rounded-xl border transition-all duration-300 flex flex-col items-center text-center ${
+                          isMarcus
+                            ? "bg-white border-blue-400 shadow-md shadow-blue-100 scale-[1.04] ring-1 ring-blue-300"
+                            : "bg-slate-100/60 border-slate-200 opacity-55 scale-100"
                         }`}>
-                          <div className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-bold shadow-sm relative ${
-                            !isSophia ? "bg-blue-500 text-white animate-pulse" : "bg-slate-400 text-white"
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm relative ${
+                            isMarcus ? "bg-blue-500 text-white animate-pulse" : "bg-slate-400 text-white"
                           }`}>
-                            S
-                            {!isSophia && (
+                            MS
+                            {isMarcus && (
                               <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
                               </span>
                             )}
                           </div>
-                          <h5 className="text-[11px] font-bold text-slate-800 mt-2">Dr. Marcus Smith</h5>
-                          <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">Exam Insights</span>
-
-                          {!isSophia && (
-                            <div className="flex items-center gap-0.5 h-3 px-1.5 py-0.5 bg-blue-50 rounded-md border border-blue-100 mt-2">
+                          <h5 className="text-[10px] font-bold text-slate-800 mt-1.5 leading-tight">Dr. Marcus Smith</h5>
+                          <span className="text-[8px] font-semibold text-slate-400 block mt-0.5">Exam Insights</span>
+                          {isMarcus && (
+                            <div className="flex items-center gap-0.5 h-3 px-1 bg-blue-50 rounded-md border border-blue-100 mt-1.5">
                               <span className="w-0.5 bg-blue-500 rounded-full h-1.5" style={{ animation: "wave 1.2s ease-in-out infinite alternate" }} />
                               <span className="w-0.5 bg-blue-500 rounded-full h-2.5" style={{ animation: "wave 0.8s ease-in-out infinite alternate 0.2s" }} />
                               <span className="w-0.5 bg-blue-500 rounded-full h-1" style={{ animation: "wave 1.0s ease-in-out infinite alternate 0.4s" }} />
                             </div>
                           )}
                         </div>
+
+                        {/* Yumna Hassan Card */}
+                        <div className={`p-2.5 rounded-xl border transition-all duration-300 flex flex-col items-center text-center ${
+                          isYumnaActive
+                            ? "bg-white border-purple-400 shadow-md shadow-purple-100 scale-[1.04] ring-1 ring-purple-300"
+                            : "bg-slate-100/60 border-slate-200 opacity-55 scale-100"
+                        }`}>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm relative ${
+                            isYumnaActive ? "bg-purple-500 text-white animate-pulse" : "bg-slate-400 text-white"
+                          }`}>
+                            YH
+                            {isYumnaActive && (
+                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500" />
+                              </span>
+                            )}
+                          </div>
+                          <h5 className="text-[10px] font-bold text-slate-800 mt-1.5 leading-tight">Yumna Hassan</h5>
+                          <span className="text-[8px] font-semibold text-slate-400 block mt-0.5">Visuals</span>
+                          {isYumnaActive && (
+                            <div className="flex items-center gap-0.5 h-3 px-1 bg-purple-50 rounded-md border border-purple-100 mt-1.5">
+                              <span className="text-[7px] text-purple-500 font-bold">🖼️ gen...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Active Visual Aid / Diagram with click-to-expand lightbox */}
-                      {activeMsg.imageUrl && (
-                        <div 
+                      {/* Active Visual Aid / Diagram */}
+                      {activeMsg?.imageUrl && (
+                        <div
                           onClick={() => setLightboxUrl(activeMsg.imageUrl!)}
                           className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white animate-scale-up cursor-pointer hover:border-primary/45 transition-colors relative group"
                         >
                           <VisualAidImage src={activeMsg.imageUrl} alt="Educational illustration" />
                           <div className="text-[9px] text-center text-slate-500 py-1.5 bg-slate-50 font-semibold border-t border-slate-100 flex items-center justify-center gap-1.5 group-hover:text-primary transition-colors">
-                            <span>🔍 Click diagram to expand view</span>
+                            <span>{isYumnaActive ? "🎨 Yumna's visual aid — click to expand" : "🔍 Click diagram to expand view"}</span>
                           </div>
                         </div>
                       )}
-                      
+
                       <style>{`
                         @keyframes wave {
                           0% { height: 4px; }
