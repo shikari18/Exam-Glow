@@ -1558,48 +1558,19 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
 
       if (sessionIdRef.current !== mySession) break;
 
-      // Separate Yumna image turns from speech turns
-      // Yumna's turns are handled inline (image generation) not spoken in the queue
-      // Build speech-only turns and a map of where Yumna turns fall
-      const speechTurns: (TeachTurn & { originalIdx: number })[] = [];
-      const yumnaTurns: { originalIdx: number; turn: TeachTurn }[] = [];
-      turns.forEach((t, i) => {
-        if (t.isYumna) {
-          yumnaTurns.push({ originalIdx: i, turn: t });
-        } else {
-          speechTurns.push({ ...t, originalIdx: i });
-        }
-      });
-
       // Play all speech turns sequentially using chained (no stopAllSpeech between pages)
       // Use playSpeechConversationChained from page 2 onwards so audio doesn't get killed
       await new Promise<void>((resolve) => {
         const playFn = pg === 1 ? playSpeechConversation : playSpeechConversationChained;
         const ctrl = playFn(
-          speechTurns,
+          turns,
           (speechIdx) => {
             if (sessionIdRef.current !== mySession) { ctrl.stop(); return; }
-            const turn = speechTurns[speechIdx];
-            const originalIdx = turn.originalIdx;
+            const turn = turns[speechIdx];
 
-            // Add the speech turn to chat and set active speaker index
-            const role: "jones" | "smith" = turn.gender === "female" ? "jones" : "smith";
-            setMessages(prev => {
-              const nextIdx = prev.length;
-              setSpeakingMsgIndex(nextIdx);
-              return [...prev, {
-                role,
-                text: turn.text,
-                speaker: turn.speaker,
-              }];
-            });
-
-            // Check if the NEXT original turn is a Yumna turn → generate her image now
-            const nextOriginalIdx = originalIdx + 1;
-            const yumnaNext = yumnaTurns.find(y => y.originalIdx === nextOriginalIdx);
-            if (yumnaNext) {
-              const yTurn = yumnaNext.turn;
-              const imageTopic = yTurn.imagePrompt || yTurn.text.split("showing")[1]?.trim() || turn.text.split(".")[0];
+            if (turn.isYumna || turn.speaker === "Yumna Hassan") {
+              // Yumna's turn: speak and generate image
+              const imageTopic = turn.imagePrompt || turn.text.split("showing")[1]?.trim() || "diagram";
               const imgUrl = buildImageUrl(imageTopic, cleanName);
               // Add Yumna's message card with the generated image and set active speaker to Yumna
               setMessages(prev => {
@@ -1607,9 +1578,21 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                 setSpeakingMsgIndex(nextIdx);
                 return [...prev, {
                   role: "yumna",
-                  text: yTurn.text,
+                  text: turn.text,
                   speaker: "Yumna Hassan",
                   imageUrl: imgUrl,
+                }];
+              });
+            } else {
+              // Professor's turn: speak and add to chat
+              const role: "jones" | "smith" = turn.gender === "female" ? "jones" : "smith";
+              setMessages(prev => {
+                const nextIdx = prev.length;
+                setSpeakingMsgIndex(nextIdx);
+                return [...prev, {
+                  role,
+                  text: turn.text,
+                  speaker: turn.speaker,
                 }];
               });
             }
@@ -2445,18 +2428,69 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                         </div>
                       </div>
 
-                      {/* Active Visual Aid / Diagram */}
-                      {activeMsg?.imageUrl && (
-                        <div
-                          onClick={() => setLightboxUrl(activeMsg.imageUrl!)}
-                          className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white animate-scale-up cursor-pointer hover:border-primary/45 transition-colors relative group"
-                        >
-                          <VisualAidImage src={activeMsg.imageUrl} alt="Educational illustration" />
-                          <div className="text-[9px] text-center text-slate-500 py-1.5 bg-slate-50 font-semibold border-t border-slate-100 flex items-center justify-center gap-1.5 group-hover:text-primary transition-colors">
-                            <span>{isYumnaActive ? "🎨 Yumna's visual aid — click to expand" : "🔍 Click diagram to expand view"}</span>
+                      {/* Persistent Main Active Visual Aid / Diagram */}
+                      {(() => {
+                        const sessionImages = messages.filter(m => m.imageUrl);
+                        const latestImageMsg = sessionImages.at(-1);
+                        if (!latestImageMsg) return null;
+
+                        return (
+                          <div className="flex flex-col gap-3">
+                            <div
+                              onClick={() => setLightboxUrl(latestImageMsg.imageUrl!)}
+                              className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white animate-scale-up cursor-pointer hover:border-primary/45 transition-colors relative group"
+                            >
+                              <VisualAidImage src={latestImageMsg.imageUrl!} alt={latestImageMsg.text || "Educational illustration"} />
+                              <div className="text-[9px] text-center text-slate-500 py-1.5 bg-slate-50 font-semibold border-t border-slate-100 flex items-center justify-center gap-1.5 group-hover:text-primary transition-colors">
+                                <span>{isYumnaActive ? "🎨 Yumna is generating a new visual... — click to expand" : "🔍 Click diagram to expand view"}</span>
+                              </div>
+                            </div>
+
+                            {/* Horizontal Scrollable Gallery of all generated diagrams so far */}
+                            {sessionImages.length > 0 && (
+                              <div className="flex flex-col gap-1.5 border-t border-slate-200/60 pt-3">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                  🎨 Yumna's Visual Gallery ({sessionImages.length})
+                                </span>
+                                <div className="flex gap-3 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                                  {sessionImages.map((imgMsg, idx) => {
+                                    const isCurrent = imgMsg === latestImageMsg;
+                                    return (
+                                      <div
+                                        key={idx}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setLightboxUrl(imgMsg.imageUrl!);
+                                        }}
+                                        className={`flex-shrink-0 w-36 rounded-xl overflow-hidden border transition-all duration-200 bg-white cursor-pointer relative group ${
+                                          isCurrent ? "border-purple-450 ring-2 ring-purple-100 scale-[0.98]" : "border-slate-200 hover:border-purple-300"
+                                        }`}
+                                      >
+                                        <div className="relative aspect-video bg-slate-50 flex items-center justify-center overflow-hidden">
+                                          <img
+                                            src={imgMsg.imageUrl}
+                                            alt="Visual aid"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                          />
+                                          {isCurrent && (
+                                            <div className="absolute inset-0 bg-purple-500/5 flex items-center justify-center">
+                                              <span className="bg-purple-600 text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-widest shadow-sm">Active</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="text-[7.5px] text-center text-slate-500 py-1 bg-slate-50 font-semibold border-t border-slate-100 truncate px-2 group-hover:text-primary transition-colors">
+                                          {imgMsg.text.slice(0, 30) || "Concept Diagram"}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       <style>{`
                         @keyframes wave {
