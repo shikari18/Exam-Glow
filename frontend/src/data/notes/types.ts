@@ -31,6 +31,7 @@ export type NotePage = {
 
 export type NoteChapter = {
   subject: string;
+  code?: string;        // optional subject code (e.g. "0452") — isolates notes per syllabus
   title: string;
   summary?: string;     // optional short description shown on cards
   pages: NotePage[];

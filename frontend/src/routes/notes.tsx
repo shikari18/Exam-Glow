@@ -25,36 +25,36 @@ export const Route = createFileRoute("/notes")({
 });
 
 const SUBJECTS = [
-  { name: "Biology", emoji: "🧬", color: "from-emerald-500 to-teal-400", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", desc: "Cells, genetics, ecology, photosynthesis, and more" },
-  { name: "Chemistry", emoji: "⚗️", color: "from-blue-500 to-indigo-400", bg: "bg-blue-50 border-blue-200", text: "text-blue-700", desc: "Atomic structure, bonding, organic chemistry, electrolysis" },
-  { name: "Physics", emoji: "⚡", color: "from-amber-500 to-orange-400", bg: "bg-amber-50 border-amber-200", text: "text-amber-700", desc: "Forces, waves, electricity, thermal physics, radioactivity" },
-  { name: "Mathematics", emoji: "📐", color: "from-violet-500 to-purple-400", bg: "bg-violet-50 border-violet-200", text: "text-violet-700", desc: "Algebra, geometry, statistics, trigonometry, sequences" },
-  { name: "Additional Mathematics", emoji: "➕", color: "from-pink-500 to-rose-400", bg: "bg-pink-50 border-pink-200", text: "text-pink-700", desc: "Pure maths, mechanics, statistics" },
-  { name: "Geography", emoji: "🌍", color: "from-teal-500 to-cyan-400", bg: "bg-teal-50 border-teal-200", text: "text-teal-700", desc: "Natural hazards, rivers, coasts, population, ecosystems" },
-  { name: "English Language", emoji: "📖", color: "from-orange-500 to-red-400", bg: "bg-orange-50 border-orange-200", text: "text-orange-700", desc: "Language analysis, writing techniques, comprehension" },
-  { name: "English Literature", emoji: "📚", color: "from-rose-500 to-pink-400", bg: "bg-rose-50 border-rose-200", text: "text-rose-700", desc: "Poetry, prose, drama — analysis and essay techniques" },
-  { name: "ICT/Computer Science", emoji: "💻", color: "from-pink-500 to-rose-400", bg: "bg-pink-50 border-pink-200", text: "text-pink-700", desc: "Hardware, networking, programming, cybersecurity" },
-  { name: "History", emoji: "📜", color: "from-stone-500 to-amber-600", bg: "bg-stone-50 border-stone-200", text: "text-stone-700", desc: "World wars, Cold War, rights movements, source analysis" },
-  { name: "Economics", emoji: "📊", color: "from-green-600 to-emerald-400", bg: "bg-green-50 border-green-200", text: "text-green-700", desc: "Supply and demand, market structures, macroeconomics" },
-  { name: "Business Studies", emoji: "💼", color: "from-sky-500 to-blue-400", bg: "bg-sky-50 border-sky-200", text: "text-sky-700", desc: "Marketing, finance, operations, human resources" },
-  { name: "Accounting", emoji: "🧾", color: "from-slate-600 to-gray-500", bg: "bg-slate-50 border-slate-200", text: "text-slate-700", desc: "Financial statements, bookkeeping, ratios, ledgers" },
-  { name: "Sociology", emoji: "🤝", color: "from-purple-500 to-fuchsia-400", bg: "bg-purple-50 border-purple-200", text: "text-purple-700", desc: "Culture, identity, social institutions, research methods" },
-  { name: "Psychology", emoji: "🧠", color: "from-fuchsia-500 to-violet-400", bg: "bg-fuchsia-50 border-fuchsia-200", text: "text-fuchsia-700", desc: "Memory, development, social behaviour, research studies" },
-  { name: "Art & Design", emoji: "🎨", color: "from-red-500 to-orange-400", bg: "bg-red-50 border-red-200", text: "text-red-700", desc: "Art history, techniques, critical analysis, design" },
-  { name: "Music", emoji: "🎵", color: "from-indigo-500 to-blue-400", bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-700", desc: "Music theory, history, harmony, set works" },
-  { name: "French", emoji: "🇫🇷", color: "from-blue-600 to-indigo-500", bg: "bg-blue-50 border-blue-200", text: "text-blue-700", desc: "Grammar, vocabulary, reading, writing, speaking" },
-  { name: "Spanish", emoji: "🇪🇸", color: "from-yellow-500 to-orange-400", bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700", desc: "Grammar, vocabulary, culture, reading, writing" },
-  { name: "Arabic", emoji: "🇸🇦", color: "from-emerald-600 to-teal-500", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", desc: "Reading, writing, speaking, and grammar" },
-  { name: "German", emoji: "🇩🇪", color: "from-orange-600 to-yellow-500", bg: "bg-orange-50 border-orange-200", text: "text-orange-700", desc: "Grammar, vocabulary, speaking, listening" },
-  { name: "Global Perspectives", emoji: "🌐", color: "from-cyan-500 to-blue-400", bg: "bg-cyan-50 border-cyan-200", text: "text-cyan-700", desc: "Global issues, research, critical thinking" },
-  { name: "Environmental Management", emoji: "🌱", color: "from-emerald-600 to-green-500", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", desc: "Ecosystems, resources, conservation" },
-  { name: "Physical Education", emoji: "⚽", color: "from-red-600 to-orange-500", bg: "bg-red-50 border-red-200", text: "text-red-700", desc: "Anatomy, training, sports psychology" },
-  { name: "Drama", emoji: "🎭", color: "from-purple-600 to-pink-500", bg: "bg-purple-50 border-purple-200", text: "text-purple-700", desc: "Performance, theatre, play analysis" },
-  { name: "Design & Technology", emoji: "🛠️", color: "from-gray-600 to-slate-500", bg: "bg-gray-50 border-gray-200", text: "text-gray-700", desc: "Product design, materials, CAD/CAM" },
-  { name: "Enterprise", emoji: "🚀", color: "from-amber-600 to-yellow-500", bg: "bg-amber-50 border-amber-200", text: "text-amber-700", desc: "Business creation, marketing, operations" },
-  { name: "Marine Science", emoji: "🌊", color: "from-blue-600 to-cyan-500", bg: "bg-blue-50 border-blue-200", text: "text-blue-700", desc: "Marine organisms, oceans, ecosystems" },
-  { name: "Food & Nutrition", emoji: "🍳", color: "from-yellow-600 to-amber-500", bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700", desc: "Nutrients, health, cooking techniques" },
-  { name: "Travel & Tourism", emoji: "✈️", color: "from-sky-600 to-cyan-500", bg: "bg-sky-50 border-sky-200", text: "text-sky-700", desc: "Tourism industry, destination marketing" }
+  { name: "Biology", code: "0610", emoji: "🧬", color: "from-emerald-500 to-teal-400", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", desc: "Cells, genetics, ecology, photosynthesis, and more" },
+  { name: "Chemistry", code: "0620", emoji: "⚗️", color: "from-blue-500 to-indigo-400", bg: "bg-blue-50 border-blue-200", text: "text-blue-700", desc: "Atomic structure, bonding, organic chemistry, electrolysis" },
+  { name: "Physics", code: "0625", emoji: "⚡", color: "from-amber-500 to-orange-400", bg: "bg-amber-50 border-amber-200", text: "text-amber-700", desc: "Forces, waves, electricity, thermal physics, radioactivity" },
+  { name: "Mathematics", code: "0580", emoji: "📐", color: "from-violet-500 to-purple-400", bg: "bg-violet-50 border-violet-200", text: "text-violet-700", desc: "Algebra, geometry, statistics, trigonometry, sequences" },
+  { name: "Additional Mathematics", code: "0606", emoji: "➕", color: "from-pink-500 to-rose-400", bg: "bg-pink-50 border-pink-200", text: "text-pink-700", desc: "Pure maths, mechanics, statistics" },
+  { name: "Geography", code: "0460", emoji: "🌍", color: "from-teal-500 to-cyan-400", bg: "bg-teal-50 border-teal-200", text: "text-teal-700", desc: "Natural hazards, rivers, coasts, population, ecosystems" },
+  { name: "English Language", code: "0500", emoji: "📖", color: "from-orange-500 to-red-400", bg: "bg-orange-50 border-orange-200", text: "text-orange-700", desc: "Language analysis, writing techniques, comprehension" },
+  { name: "English Literature", code: "0475", emoji: "📚", color: "from-rose-500 to-pink-400", bg: "bg-rose-50 border-rose-200", text: "text-rose-700", desc: "Poetry, prose, drama — analysis and essay techniques" },
+  { name: "ICT/Computer Science", code: "0478", emoji: "💻", color: "from-pink-500 to-rose-400", bg: "bg-pink-50 border-pink-200", text: "text-pink-700", desc: "Hardware, networking, programming, cybersecurity" },
+  { name: "History", code: "0470", emoji: "📜", color: "from-stone-500 to-amber-600", bg: "bg-stone-50 border-stone-200", text: "text-stone-700", desc: "World wars, Cold War, rights movements, source analysis" },
+  { name: "Economics", code: "0455", emoji: "📊", color: "from-green-600 to-emerald-400", bg: "bg-green-50 border-green-200", text: "text-green-700", desc: "Supply and demand, market structures, macroeconomics" },
+  { name: "Business Studies", code: "0450", emoji: "💼", color: "from-sky-500 to-blue-400", bg: "bg-sky-50 border-sky-200", text: "text-sky-700", desc: "Marketing, finance, operations, human resources" },
+  { name: "Accounting", code: "0452", emoji: "🧾", color: "from-slate-600 to-gray-500", bg: "bg-slate-50 border-slate-200", text: "text-slate-700", desc: "Financial statements, bookkeeping, ratios, ledgers" },
+  { name: "Sociology", code: "0495", emoji: "🤝", color: "from-purple-500 to-fuchsia-400", bg: "bg-purple-50 border-purple-200", text: "text-purple-700", desc: "Culture, identity, social institutions, research methods" },
+  { name: "Psychology", code: "0980", emoji: "🧠", color: "from-fuchsia-500 to-violet-400", bg: "bg-fuchsia-50 border-fuchsia-200", text: "text-fuchsia-700", desc: "Memory, development, social behaviour, research studies" },
+  { name: "Art & Design", code: "0400", emoji: "🎨", color: "from-red-500 to-orange-400", bg: "bg-red-50 border-red-200", text: "text-red-700", desc: "Art history, techniques, critical analysis, design" },
+  { name: "Music", code: "0410", emoji: "🎵", color: "from-indigo-500 to-blue-400", bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-700", desc: "Music theory, history, harmony, set works" },
+  { name: "French", code: "0520", emoji: "🇫🇷", color: "from-blue-600 to-indigo-500", bg: "bg-blue-50 border-blue-200", text: "text-blue-700", desc: "Grammar, vocabulary, reading, writing, speaking" },
+  { name: "Spanish", code: "0530", emoji: "🇪🇸", color: "from-yellow-500 to-orange-400", bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700", desc: "Grammar, vocabulary, culture, reading, writing" },
+  { name: "Arabic", code: "0544", emoji: "🇸🇦", color: "from-emerald-600 to-teal-500", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", desc: "Reading, writing, speaking, and grammar" },
+  { name: "German", code: "0525", emoji: "🇩🇪", color: "from-orange-600 to-yellow-500", bg: "bg-orange-50 border-orange-200", text: "text-orange-700", desc: "Grammar, vocabulary, speaking, listening" },
+  { name: "Global Perspectives", code: "0457", emoji: "🌐", color: "from-cyan-500 to-blue-400", bg: "bg-cyan-50 border-cyan-200", text: "text-cyan-700", desc: "Global issues, research, critical thinking" },
+  { name: "Environmental Management", code: "0680", emoji: "🌱", color: "from-emerald-600 to-green-500", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", desc: "Ecosystems, resources, conservation" },
+  { name: "Physical Education", code: "0413", emoji: "⚽", color: "from-red-600 to-orange-500", bg: "bg-red-50 border-red-200", text: "text-red-700", desc: "Anatomy, training, sports psychology" },
+  { name: "Drama", code: "0411", emoji: "🎭", color: "from-purple-600 to-pink-500", bg: "bg-purple-50 border-purple-200", text: "text-purple-700", desc: "Performance, theatre, play analysis" },
+  { name: "Design & Technology", code: "0445", emoji: "🛠️", color: "from-gray-600 to-slate-500", bg: "bg-gray-50 border-gray-200", text: "text-gray-700", desc: "Product design, materials, CAD/CAM" },
+  { name: "Enterprise", code: "0454", emoji: "🚀", color: "from-amber-600 to-yellow-500", bg: "bg-amber-50 border-amber-200", text: "text-amber-700", desc: "Business creation, marketing, operations" },
+  { name: "Marine Science", code: "0697", emoji: "🌊", color: "from-blue-600 to-cyan-500", bg: "bg-blue-50 border-blue-200", text: "text-blue-700", desc: "Marine organisms, oceans, ecosystems" },
+  { name: "Food & Nutrition", code: "0648", emoji: "🍳", color: "from-yellow-600 to-amber-500", bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700", desc: "Nutrients, health, cooking techniques" },
+  { name: "Travel & Tourism", code: "0471", emoji: "✈️", color: "from-sky-600 to-cyan-500", bg: "bg-sky-50 border-sky-200", text: "text-sky-700", desc: "Tourism industry, destination marketing" }
 ];
 
 // ─── Math LaTeX cleaner ────────────────────────────────────────────────────────
@@ -782,15 +782,19 @@ function NotesIndex() {
             </h2>
             <div className="grid md:grid-cols-2 gap-4 mb-10">
               {mySubjects.map((s) => {
-                const chapters = getChaptersForSubject(s.name);
+                const subjectParam = s.code ? `${s.name} - ${s.code}` : s.name;
+                const chapters = getChaptersForSubject(subjectParam);
                 return (
-                  <Link key={s.name} to="/subject-notes/$subject" params={{ subject: s.name }} className={`group border rounded-2xl overflow-hidden hover:shadow-md transition-all ${s.bg}`}>
+                  <Link key={s.name} to="/subject-notes/$subject" params={{ subject: subjectParam }} className={`group border rounded-2xl overflow-hidden hover:shadow-md transition-all ${s.bg}`}>
                     <div className={`h-1.5 bg-gradient-to-r ${s.color}`} />
                     <div className="p-5 flex items-start gap-4">
                       <span className="text-3xl">{s.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className={`font-bold text-lg ${s.text}`}>{s.name}</h3>
+                          <div>
+                            <h3 className={`font-bold text-lg ${s.text}`}>{s.name}</h3>
+                            {s.code && <span className="text-[10px] font-bold tracking-wider text-foreground/40 uppercase">{s.code}</span>}
+                          </div>
                           <ArrowRight className={`w-4 h-4 ${s.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
                         </div>
                         <p className="text-sm text-foreground/60 mt-0.5">{s.desc}</p>
@@ -815,16 +819,20 @@ function NotesIndex() {
           <>
             <h2 className="font-bold text-sm text-foreground/50 uppercase tracking-wider mb-4">Other Subjects</h2>
             <div className="grid md:grid-cols-3 gap-3 mb-10">
-              {otherSubjects.map((s) => (
-                <Link key={s.name} to="/subject-notes/$subject" params={{ subject: s.name }} className="group border border-border rounded-xl p-4 hover:border-primary/40 hover:bg-pink-soft/20 transition-all flex items-center gap-3">
-                  <span className="text-2xl">{s.emoji}</span>
-                  <div>
-                    <p className="font-semibold text-sm">{s.name}</p>
-                    <p className="text-xs text-foreground/50 mt-0.5 line-clamp-1">{s.desc}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-primary ml-auto transition-colors" />
-                </Link>
-              ))}
+              {otherSubjects.map((s) => {
+                const subjectParam = s.code ? `${s.name} - ${s.code}` : s.name;
+                return (
+                  <Link key={s.name} to="/subject-notes/$subject" params={{ subject: subjectParam }} className="group border border-border rounded-xl p-4 hover:border-primary/40 hover:bg-pink-soft/20 transition-all flex items-center gap-3">
+                    <span className="text-2xl">{s.emoji}</span>
+                    <div>
+                      <p className="font-semibold text-sm">{s.name}</p>
+                      {s.code && <p className="text-[10px] text-foreground/40 font-bold">{s.code}</p>}
+                      <p className="text-xs text-foreground/50 mt-0.5 line-clamp-1">{s.desc}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-primary ml-auto transition-colors" />
+                  </Link>
+                );
+              })}
             </div>
           </>
         )}

@@ -170,11 +170,15 @@ const ACCENT_COLORS = [
 ];
 
 const getNotesSubjectName = (name: string): string => {
+  // Extract code from name like "Accounting - 0452" → "0452"
+  const codeMatch = name.match(/\s*-\s*(\d{4})$/);
+  const code = codeMatch ? codeMatch[1] : "";
   const clean = name.replace(/\s*-\s*\d{4}/g, "").replace(/\s*\(9-1\)\s*/g, "").trim();
   if (clean.includes("Information and Communication Technology") || clean.includes("Computer Science")) {
-    return "ICT/Computer Science";
+    return code ? `ICT/Computer Science - ${code}` : "ICT/Computer Science";
   }
-  return clean;
+  // Preserve the code so notes are isolated per syllabus (e.g. "Accounting - 0452")
+  return code ? `${clean} - ${code}` : clean;
 };
 
 function Subjects() {

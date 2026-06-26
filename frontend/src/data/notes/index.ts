@@ -16,18 +16,23 @@ import { englishLanguageNotes } from "./english-language-notes";
 
 export type { NoteChapter, NotePage, NoteBlock, BulletItem } from "./types";
 
+// Helper to stamp syllabus codes onto chapter arrays so notes are isolated per syllabus
+function tagNotes(chapters: NoteChapter[], code: string): NoteChapter[] {
+  return chapters.map(c => ({ ...c, code }));
+}
+
 export const noteChapters: NoteChapter[] = [
-  ...biologyNotes,
-  ...chemistryNotes,
-  ...physicsNotes,
-  ...mathematicsNotes,
-  ...computerScienceNotes,
-  ...accountingNotes,
-  ...economicsNotes,
-  ...businessStudiesNotes,
-  ...geographyNotes,
-  ...historyNotes,
-  ...englishLanguageNotes,
+  ...tagNotes(biologyNotes, "0610"),
+  ...tagNotes(chemistryNotes, "0620"),
+  ...tagNotes(physicsNotes, "0625"),
+  ...tagNotes(mathematicsNotes, "0580"),
+  ...tagNotes(computerScienceNotes, "0478"),
+  ...tagNotes(accountingNotes, "0452"),
+  ...tagNotes(economicsNotes, "0455"),
+  ...tagNotes(businessStudiesNotes, "0450"),
+  ...tagNotes(geographyNotes, "0460"),
+  ...tagNotes(historyNotes, "0470"),
+  ...tagNotes(englishLanguageNotes, "0500"),
 ];
 
 const subjectMap: Record<string, string> = {
@@ -276,20 +281,106 @@ const subjectAliasMap: Record<string, string> = {
   "additional mathematics": "Mathematics",
 };
 
-export function getChaptersForSubject(subject: string): NoteChapter[] {
-  // First try exact match
-  let staticChapters = noteChapters.filter((c) => c.subject === subject);
-  if (staticChapters.length > 0) return staticChapters;
+export function parseSubjectParam(subjectParam: string) {
+  // e.g. "Accounting - 0452" or "Accounting (9-1) - 0985" or "Biology (9-1) - 0970"
+  const match = subjectParam.match(/^(.+?)(?:\s*\(9-1\))?\s*-\s*(\d{4})$/i);
+  if (match) {
+    return {
+      baseSubject: match[1].trim(),
+      code: match[2].trim(),
+      isNineToOne: subjectParam.includes("9-1"),
+      fullName: subjectParam
+    };
+  }
+  return {
+    baseSubject: subjectParam,
+    code: "",
+    isNineToOne: false,
+    fullName: subjectParam
+  };
+}
 
-  // Try alias resolution (e.g. "ICT/Computer Science" → "Computer Science")
-  const alias = subjectAliasMap[subject.toLowerCase().trim()];
-  if (alias) {
-    staticChapters = noteChapters.filter((c) => c.subject === alias);
-    if (staticChapters.length > 0) return staticChapters;
+export function getDefaultSubjectWithCode(subjectName: string): string {
+  const s = subjectName.toLowerCase().trim();
+  if (s === "accounting") return "Accounting - 0452";
+  if (s === "biology") return "Biology - 0610";
+  if (s === "chemistry") return "Chemistry - 0620";
+  if (s === "physics") return "Physics - 0625";
+  if (s === "mathematics") return "Mathematics - 0580";
+  if (s === "computer science" || s === "computer-science" || s === "ict/computer science") return "Computer Science - 0478";
+  if (s === "economics") return "Economics - 0455";
+  if (s === "business studies" || s === "business") return "Business Studies - 0450";
+  if (s === "geography") return "Geography - 0460";
+  if (s === "history") return "History - 0470";
+  if (s === "english language" || s === "english") return "English - First Language - 0500";
+  if (s === "additional mathematics") return "Additional Mathematics - 0606";
+  return subjectName; // fallback
+}
+
+export function getChaptersForSubject(subject: string): NoteChapter[] {
+  const { baseSubject, code, fullName } = parseSubjectParam(subject);
+
+  // 1. Try static chapters for the base subject
+  // When a code is provided (e.g. "0452"), only match static chapters that either:
+  //   a) have no code set (legacy — compatible with any syllabus code of that subject), OR
+  //   b) have a matching code (future: per-syllabus-code chapters)
+  // When a different code is provided for the same subject name (e.g. "0985"),
+  //   static chapters without a code are NOT returned → falls through to dynamic generation.
+  //
+  // Current behaviour (all static chapters have no code set):
+  //   "Accounting - 0452" → returns accountingNotes (no code mismatch)
+  //   "Accounting - 0985" → returns accountingNotes (no code mismatch, same base subject)
+  // To isolate notes per code in future, add `code: "0452"` to accountingNotes chapters.
+  let staticChapters = noteChapters.filter((c) => {
+    const subjectMatch = c.subject === baseSubject;
+    if (!subjectMatch) return false;
+    // If the chapter has an explicit code, it must match the requested code
+    if (c.code && code && c.code !== code) return false;
+    return true;
+  });
+  
+  // Try alias resolution for base subject
+  if (staticChapters.length === 0) {
+    const alias = subjectAliasMap[baseSubject.toLowerCase().trim()];
+    if (alias) {
+      staticChapters = noteChapters.filter((c) => {
+        const subjectMatch = c.subject === alias;
+        if (!subjectMatch) return false;
+        if (c.code && code && c.code !== code) return false;
+        return true;
+      });
+    }
   }
 
-  const cleanSubject = subject.toLowerCase().trim();
-  const syllabusKey = subjectMap[cleanSubject];
+  if (staticChapters.length > 0) {
+    return staticChapters.map(chap => {
+      // Helper to replace syllabus code in text blocks
+      const customizedPages = chap.pages.map(page => {
+        const customizedBlocks = page.blocks.map(block => {
+          if (block.kind === "intro") {
+            let text = block.text;
+            if (code) {
+              text = text.replace(/\b\d{4}\b/g, code);
+            }
+            return { ...block, text };
+          }
+          return block;
+        });
+        return { ...page, blocks: customizedBlocks };
+      });
+
+      return {
+        ...chap,
+        subject: fullName,
+        code: code || chap.code,   // stamp code so the reader knows which syllabus these belong to
+        pages: customizedPages
+      };
+    });
+  }
+
+  // 2. Load dynamic chapters from syllabus objectives
+  const cleanBase = baseSubject.toLowerCase().replace(/\s+/g, '-');
+  const syllabusKey = code ? `${cleanBase}-${code}` : subjectMap[cleanBase];
   if (!syllabusKey) return [];
   
   const syllabus = syllabusData[syllabusKey];
@@ -304,7 +395,7 @@ export function getChaptersForSubject(subject: string): NoteChapter[] {
     });
     
     return {
-      subject: subject,
+      subject: fullName,
       title: obj.title,
       summary: obj.description,
       pages: pages
@@ -315,7 +406,8 @@ export function getChaptersForSubject(subject: string): NoteChapter[] {
 }
 
 export function getChapter(subject: string, title: string): NoteChapter | undefined {
-  const staticChapter = noteChapters.find((c) => c.subject === subject && c.title === title);
+  const { fullName } = parseSubjectParam(subject);
+  const staticChapter = noteChapters.find((c) => c.subject === fullName && c.title === title);
   if (staticChapter) return staticChapter;
   
   const chapters = getChaptersForSubject(subject);

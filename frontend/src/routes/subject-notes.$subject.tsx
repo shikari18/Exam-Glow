@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { getChaptersForSubject } from "@/data/notes/index";
+import { useProfile } from "@/lib/profile-context";
+import { getChaptersForSubject, getDefaultSubjectWithCode } from "@/data/notes/index";
 import { 
   ArrowLeft, BookOpen, Bookmark, Share2, Loader2, 
   Bot, X, ChevronRight, BookMarked, ArrowRight, Zap, Trophy, FileText,
@@ -770,16 +771,38 @@ function FullScreenChapterReader({ chapter, onClose }: FullScreenReaderProps) {
 // ── Main SubjectNotes Component ─────────────────────────────────────────────
 function SubjectNotes() {
   const { subject } = Route.useParams();
+  const { enrolledSubjects } = useProfile();
   const [activeChapterIndex, setActiveChapterIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
-  const chapters = getChaptersForSubject(subject);
+  // Differentiate subject parameter per syllabus
+  // The `subject` param can be:
+  //   - "Accounting" (no code, from older links)
+  //   - "Accounting - 0452" (with code, from notes.tsx / subjects.tsx)
+  const subjectCodeMatch = subject.match(/\s*-\s*(\d{4})$/);
+  const subjectCode = subjectCodeMatch ? subjectCodeMatch[1] : "";
+  const subjectBaseName = subject.replace(/\s*-\s*\d{4}/g, "").replace(/\s*\(9-1\)\s*/g, "").trim();
+
+  // Try to find an enrolled subject match; prefer exact code match, then fall back to name only
+  const enrolledMatch = enrolledSubjects.find(s => {
+    const cleanEnrolled = s.replace(/\s*-\s*\d{4}/g, "").replace(/\s*\(9-1\)\s*/g, "").trim().toLowerCase();
+    const enrolledCode = (s.match(/\s*-\s*(\d{4})$/) || [])[1] || "";
+    if (subjectCode && enrolledCode) {
+      return cleanEnrolled === subjectBaseName.toLowerCase() && enrolledCode === subjectCode;
+    }
+    return cleanEnrolled === subjectBaseName.toLowerCase();
+  });
+  const subjectNameWithCode = enrolledMatch || (subjectCode ? `${subjectBaseName} - ${subjectCode}` : getDefaultSubjectWithCode(subject));
+
+  const chapters = getChaptersForSubject(subjectNameWithCode);
   const filteredChapters = chapters.filter(ch => 
     ch.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (ch.summary && ch.summary.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-  const colorScheme = SUBJECT_COLORS[subject] ?? "from-primary to-purple-500 border-slate-100 bg-slate-50/10";
+  
+  const baseName = subjectNameWithCode.replace(/\s*-\s*\d{4}/g, "").replace(/\s*\(9-1\)\s*/g, "").trim();
+  const colorScheme = SUBJECT_COLORS[baseName] ?? "from-primary to-purple-500 border-slate-100 bg-slate-50/10";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FCFCFA]">
@@ -798,7 +821,7 @@ function SubjectNotes() {
             <ArrowLeft className="w-3.5 h-3.5" /> All Subjects
           </Link>
           <div className="flex items-center gap-3">
-            <h1 className="font-sans text-3xl font-extrabold text-slate-900 tracking-tight">{subject} Study Guide</h1>
+            <h1 className="font-sans text-3xl font-extrabold text-slate-900 tracking-tight">{subjectNameWithCode} Study Guide</h1>
           </div>
           <p className="text-sm text-slate-500 mt-2 max-w-xl leading-relaxed">
             Select a chapter below to open the full-screen study reader. Structured revisions with diagrams, definitions, comparison columns, and high-yield exam tips.
@@ -810,7 +833,7 @@ function SubjectNotes() {
               <Search className="absolute left-4 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder={`Search ${subject} topics or ask Yumna AI...`}
+                placeholder={`Search ${subjectNameWithCode} topics or ask Yumna AI...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-11 pr-4 text-sm outline-none focus:bg-white focus:border-primary/30 focus:ring-1 focus:ring-primary/10 transition-all placeholder:text-slate-400 text-slate-800"
