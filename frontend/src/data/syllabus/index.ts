@@ -9,17 +9,7 @@ import { geography0460Data } from "./geography-0460";
 import { english0500Data } from "./english-language-0500";
 import { business0450Data } from "./business-studies-0450";
 import { accounting0452Data } from "./accounting-0452";
-import { physics0625Data } from "./physics-0625";
-import { mathematics0580Data } from "./mathematics-0580";
-import { chemistry0620Data } from "./chemistry-0620";
-import { biology0610Data } from "./biology-0610";
-import { cs0478Data } from "./computer-science-0478";
-import { economics0455Data } from "./economics-0455";
-import { history0470Data } from "./history-0470";
-import { geography0460Data } from "./geography-0460";
-import { english0500Data } from "./english-language-0500";
-import { business0450Data } from "./business-studies-0450";
-import { accounting0452Data } from "./accounting-0452";
+
 import { SyllabusData, Subject, SyllabusObjective } from "@/types/syllabus";
 
 export const syllabusData: Record<string, SyllabusData> = {

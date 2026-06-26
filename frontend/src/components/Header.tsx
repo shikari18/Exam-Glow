@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Search, Bell, Bot, LogOut, Menu, X, BookOpen, FileText, Zap, Trophy, Settings, Library, GraduationCap } from "lucide-react";
+import { Search, Bell, Bot, LogOut, Menu, X, BookOpen, FileText, Zap, Trophy, Settings, Library, GraduationCap, Home } from "lucide-react";
 import { Logo } from "./Logo";
 import { AiPanel } from "./AiPanel";
 import { useAuth } from "@/lib/auth-context";
 import { logOut } from "@/api/auth";
 
 const navItems = [
+  { to: "/home", label: "Home", Icon: Home },
   { to: "/library", label: "Library", Icon: Library },
   { to: "/subjects", label: "Subjects", Icon: BookOpen },
   { to: "/past-papers", label: "Past Papers", Icon: FileText },
@@ -39,7 +40,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {isAuthed && navItems.map((n) => {
-              const active = loc.pathname.startsWith(n.to);
+              const active = n.to === "/home" ? loc.pathname === n.to : loc.pathname.startsWith(n.to);
               return (
                 <Link
                   key={n.to}
@@ -133,7 +134,7 @@ export function Header({ authed = false }: { authed?: boolean }) {
         {mobileOpen && (
           <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur px-6 py-4 space-y-1">
             {isAuthed && navItems.map((n) => {
-              const active = loc.pathname.startsWith(n.to);
+              const active = n.to === "/home" ? loc.pathname === n.to : loc.pathname.startsWith(n.to);
               return (
                 <Link
                   key={n.to}

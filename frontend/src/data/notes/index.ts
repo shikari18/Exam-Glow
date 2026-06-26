@@ -1,146 +1,33 @@
 import type { NoteChapter, NoteBlock } from "./types";
 import { syllabusData } from "../syllabus";
 
-// Biology
-import { biologyCellsNotes } from "./biology-cells";
-import { biologyPhotosynthesisNotes } from "./biology-photosynthesis";
-import { biologyGeneticsNotes } from "./biology-genetics";
-import { biologyNutritionNotes } from "./biology-nutrition";
-import { biologyNervousNotes } from "./biology-nervous";
-import { biologyEcologyNotes } from "./biology-ecology";
-
-// Chemistry
-import { chemistryBondingNotes } from "./chemistry-bonding";
-import { chemistryOrganicNotes } from "./chemistry-organic";
-import { chemistryRatesNotes } from "./chemistry-rates";
-import { chemistryAcidsNotes } from "./chemistry-acids";
-import { chemistryElectrolysisNotes } from "./chemistry-electrolysis";
-
-// Physics
-import { physicsForcesNotes } from "./physics-forces";
-import { physicsElectricityNotes } from "./physics-electricity";
-import { physicsWavesNotes } from "./physics-waves";
-import { physicsThermalNotes } from "./physics-thermal";
-import { physicsSpaceNotes } from "./physics-space";
-
-// Mathematics
-import { mathematicsAlgebraNotes } from "./mathematics-algebra";
-import { mathematicsGeometryNotes } from "./mathematics-geometry";
-import { mathematicsStatisticsNotes } from "./mathematics-statistics";
-
-// Computer Science
-import {
-  csDataRepresentationNotes,
-  csDataTransmissionNotes,
-  csHardwareNotes,
-  csSoftwareNotes,
-  csInternetNotes,
-  csAlgorithmsNotes,
-  csProgrammingNotes,
-} from "./computer-science-notes";
-
-// Accounting
-import {
-  accountingDoubleEntryNotes,
-  accountingFinancialStatementsNotes,
-  accountingCashFlowNotes,
-} from "./accounting-notes";
-
-// Economics
-import {
-  economicsBasicProblemNotes,
-  economicsSupplyDemandNotes,
-  economicsMacroNotes,
-  economicsTradeNotes,
-} from "./economics-notes";
-
-// Business Studies
-import {
-  businessActivityNotes,
-  businessPeopleNotes,
-  businessMarketingNotes,
-  businessFinanceNotes,
-} from "./business-studies-notes";
-
-// Geography
-import {
-  geographyPopulationNotes,
-  geographyPhysicalNotes,
-  geographyHazardsNotes,
-} from "./geography-notes";
-
-// History
-import {
-  historyWWINotes,
-  historyRiseOfDictatorsNotes,
-  historyColdWarNotes,
-} from "./history-notes";
-
-// English Language
-import {
-  englishReadingNotes,
-  englishWritingNotes,
-} from "./english-notes";
+// Import new consolidated notes
+import { biologyNotes } from "./biology-notes";
+import { chemistryNotes } from "./chemistry-notes";
+import { physicsNotes } from "./physics-notes";
+import { mathematicsNotes } from "./mathematics-notes";
+import { computerScienceNotes } from "./computer-science-notes";
+import { accountingNotes } from "./accounting-notes";
+import { economicsNotes } from "./economics-notes";
+import { businessStudiesNotes } from "./business-studies-notes";
+import { geographyNotes } from "./geography-notes";
+import { historyNotes } from "./history-notes";
+import { englishLanguageNotes } from "./english-language-notes";
 
 export type { NoteChapter, NotePage, NoteBlock, BulletItem } from "./types";
 
 export const noteChapters: NoteChapter[] = [
-  // Biology — 6 chapters
-  biologyCellsNotes,
-  biologyPhotosynthesisNotes,
-  biologyGeneticsNotes,
-  biologyNutritionNotes,
-  biologyNervousNotes,
-  biologyEcologyNotes,
-  // Chemistry — 5 chapters
-  chemistryBondingNotes,
-  chemistryOrganicNotes,
-  chemistryRatesNotes,
-  chemistryAcidsNotes,
-  chemistryElectrolysisNotes,
-  // Physics — 5 chapters
-  physicsForcesNotes,
-  physicsElectricityNotes,
-  physicsWavesNotes,
-  physicsThermalNotes,
-  physicsSpaceNotes,
-  // Mathematics — 3 chapters
-  mathematicsAlgebraNotes,
-  mathematicsGeometryNotes,
-  mathematicsStatisticsNotes,
-  // Computer Science — 7 chapters
-  csDataRepresentationNotes,
-  csDataTransmissionNotes,
-  csHardwareNotes,
-  csSoftwareNotes,
-  csInternetNotes,
-  csAlgorithmsNotes,
-  csProgrammingNotes,
-  // Accounting — 3 chapters
-  accountingDoubleEntryNotes,
-  accountingFinancialStatementsNotes,
-  accountingCashFlowNotes,
-  // Economics — 4 chapters
-  economicsBasicProblemNotes,
-  economicsSupplyDemandNotes,
-  economicsMacroNotes,
-  economicsTradeNotes,
-  // Business Studies — 4 chapters
-  businessActivityNotes,
-  businessPeopleNotes,
-  businessMarketingNotes,
-  businessFinanceNotes,
-  // Geography — 3 chapters
-  geographyPopulationNotes,
-  geographyPhysicalNotes,
-  geographyHazardsNotes,
-  // History — 3 chapters
-  historyWWINotes,
-  historyRiseOfDictatorsNotes,
-  historyColdWarNotes,
-  // English Language — 2 chapters
-  englishReadingNotes,
-  englishWritingNotes,
+  ...biologyNotes,
+  ...chemistryNotes,
+  ...physicsNotes,
+  ...mathematicsNotes,
+  ...computerScienceNotes,
+  ...accountingNotes,
+  ...economicsNotes,
+  ...businessStudiesNotes,
+  ...geographyNotes,
+  ...historyNotes,
+  ...englishLanguageNotes,
 ];
 
 const subjectMap: Record<string, string> = {

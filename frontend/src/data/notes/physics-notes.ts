@@ -1,4 +1,4 @@
 ﻿import type { NoteChapter } from './types';
 
-export const historyNotes: NoteChapter[] = [];
+export const physicsNotes: NoteChapter[] = [];
 
