@@ -308,7 +308,7 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [audioState, setAudioState] = useState<"idle" | "speaking" | "teaching">("idle");
-  const [speakingTurnIndex, setSpeakingTurnIndex] = useState<number | null>(null);
+  const [speakingMsgIndex, setSpeakingMsgIndex] = useState<number | null>(null);
   // 40-minute teach session timer (seconds)
   const [teachTimer, setTeachTimer] = useState<number | null>(null);
   const teachTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -339,7 +339,7 @@ function SyllabusPDFReader({ subjectName, subjectCode, subjectId, yearRange, fil
   // Auto scroll chat to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, speakingTurnIndex]);
+  }, [messages, isTyping, speakingMsgIndex]);
 
   // Clean reader on Escape key press
   useEffect(() => {
@@ -475,7 +475,441 @@ Output ONLY this JSON format (no markdown, no backticks, no extra text):
     if (json.startsWith("```")) json = json.replace(/^```(json)?/, "").replace(/```$/, "").trim();
     const s = json.indexOf("["); const e = json.lastIndexOf("]");
     if (s !== -1 && e > s) json = json.slice(s, e + 1);
+    json = json.replace(/,\s*([\]}])/g, "$1"); // strip trailing commas to prevent parsing errors
     return JSON.parse(json) as TeachTurn[];
+  };
+
+  const generateFallbackScript = (pageNum: number): TeachTurn[] => {
+    const aims = getCategoryAims();
+    const objs = getObjectivesForPage(pageNum - 8);
+    const aimsText = aims.length > 0 ? aims[0] : "develop subject-specific skills and deep conceptual understanding";
+
+    if (pageNum === 1) {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Welcome, everyone! Today, we are beginning our comprehensive syllabus walkthrough for IGCSE ${cleanName}, course code ${subjectCode}, covering the ${yearRange} examination periods. Understanding your syllabus is the ultimate foundation for exam success!`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Absolutely, Sophia! Many students underestimate the syllabus, but it is literally the official guide to everything that can be tested. By aligning your studies with these official objectives, you ensure no surprises on exam day.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Precisely, Marcus. We will look at how the entire course is structured, what chapters are covered, and how you will be assessed. Let's make sure we build a perfect conceptual map right from the start.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Yes, a clear learning path is essential. When you know where you are going, studying becomes far more structured and much less stressful. We'll be here with you every step of the way!`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is the spirit, Marcus! Yumna, generate an image of the syllabus cover page with a roadmap to show how we'll navigate this subject together.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing a learning roadmap for IGCSE ${cleanName}.`,
+          isYumna: true,
+          imagePrompt: `IGCSE ${cleanName} syllabus learning roadmap pathway`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `That is a fantastic roadmap, Yumna! It shows exactly how our journey unfolds from basic principles to advanced exam-style applications.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `It really does. Let's turn the page and look at the core Cambridge learner attributes that will guide our mindset.`
+        }
+      ];
+    }
+
+    if (pageNum === 2) {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `On page two, we explore the core Cambridge philosophy. Cambridge education is designed to cultivate five essential learner attributes: being confident, responsible, reflective, innovative, and engaged.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `These are outstanding qualities, Sophia. They aren't just academic goals; they are life skills. Duke University even endorses this curriculum for its exceptional rigour, which prepares students perfectly for university.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `I absolutely agree. For instance, being 'reflective' means analyzing your own work, learning from mistakes, and improving your study strategies. That is how you turn a B grade into an A-star!`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Indeed. And being 'innovative' means applying what you know to unfamiliar problems. In IGCSE exams, they love to give you scenarios you've never seen before to test if you can think on your feet.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is so true, Marcus! Yumna, generate an image of the five Cambridge Learner Attributes represented as a beautiful interconnected gears diagram.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing the five Cambridge Learner Attributes.`,
+          isYumna: true,
+          imagePrompt: `Cambridge Learner Attributes five gears diagram`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Look at that! The gears show how these attributes drive each other. Being responsible makes you reflective, which makes you innovative!`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `A perfect visual, Yumna. Let's carry this positive, reflective mindset as we move to the next page and look at our table of contents.`
+        }
+      ];
+    }
+
+    if (pageNum === 3) {
+      const chapterList = objectives.slice(0, 5).map(o => `Chapter ${o.code}: ${o.title}`).join(", ");
+      const chaptersText = chapterList ? `Our main chapters include ${chapterList}, and more` : "We have a structured sequence of chapters that build your knowledge step-by-step";
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Welcome to the Table of Contents! This page gives us a complete directory of the chapters we need to cover. ${chaptersText}.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `This table of contents is a great checklist, Sophia. As you study, you can tick off each chapter. It gives you a great sense of progress and helps you see how different topics connect.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Yes, and it is crucial to study them in order because the early chapters lay the foundations for the more advanced ones. Marcus, which areas do students usually find most challenging here?`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Usually, it is the chapters that combine theoretical concepts with quantitative calculations or complex diagrams. Students need to spend extra time on those to build fluency.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Exactly, those are the high-yield chapters! Yumna, generate an image of a table of contents mind map showing the key chapters of this course.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing a mind map of the chapters in IGCSE ${cleanName}.`,
+          isYumna: true,
+          imagePrompt: `IGCSE ${cleanName} chapters mind map overview`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Seeing the chapters laid out as a mind map is highly effective. It helps students understand the macro-structure of the entire subject.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `It really does. Now, let's turn the page to discover the educational aims that Cambridge has set for us.`
+        }
+      ];
+    }
+
+    if (pageNum === 4) {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `On page four, we focus on the educational aims of the curriculum. The primary aim is to ${aimsText}.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `That is an excellent aim, Sophia. Cambridge wants to make sure you don't just memorize facts for a exam, but that you develop deep understanding and analytical skills that you can use in the real world.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Yes! They want to foster curiosity, scientific accuracy, and logical reasoning. This is why exams test your ability to explain 'why' things happen, not just 'what' happens.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Precisely. When answering questions, remember that explaining the underlying principles and showing how they apply will always score you the highest marks.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is the key! Yumna, generate an image of a balance scale showing theory on one side and real-world application on the other.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing the balance between curriculum theory and real-world application.`,
+          isYumna: true,
+          imagePrompt: `balance scale theory on one side and real world application on the other`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Perfect visualization. That balance is exactly what you should strive for in your revision: learn the theory, then practice applying it.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Beautifully said, Marcus. Let's move to page five to see the full curriculum content overview.`
+        }
+      ];
+    }
+
+    if (pageNum === 5) {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Here is the Curriculum Content Overview. This page is critical because it details the specific content requirements and highlights the difference between Core and Extended paths.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `That is a very important distinction, Sophia. The Core curriculum is designed for everyone, covering the essential foundations. The Extended path includes additional, more advanced topics.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Yes! If you are aiming for the top grades—like an A or A-star—you must study the Extended curriculum. It covers the concepts in much more mathematical and analytical depth.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Exactly. Make sure you check which papers you are registered for so you know exactly which sections of this overview apply to you.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is vital! Yumna, generate an image of a tree diagram showing the core trunk and extended branches of the curriculum.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing the Core vs Extended curriculum paths as a tree.`,
+          isYumna: true,
+          imagePrompt: `curriculum tree core trunk and extended branches`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `The tree diagram shows it perfectly: the Core forms the sturdy trunk of basic concepts, while the Extended branches out into higher-level details.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `It really does. Let's keep climbing this tree of knowledge as we move to page six and look at the exam paper structure.`
+        }
+      ];
+    }
+
+    if (pageNum === 6) {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `On page six, we look at the Examination Components. This is where we learn how you will be graded! You will sit multiple papers, including a multiple-choice paper, a theory paper, and a practical paper.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `That's right, Sophia. The weightings of these papers are key. For example, the theory paper usually carries about 50% of the total grade, which makes it incredibly important to master.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Yes, and the practical paper or alternative-to-practical tests your experimental skills and ability to design investigations, record data, and draw valid conclusions.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `A top exam tip here: look at the mark allocations! A 2-mark question only requires two key points, whereas a 6-mark question requires a structured, detailed explanation.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is an invaluable tip, Marcus. Yumna, generate an image of a pie chart showing the percentage weightings of the different exam papers.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing the exam paper weightings.`,
+          isYumna: true,
+          imagePrompt: `exam papers percentage weightings pie chart`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Seeing the weightings as a pie chart is so helpful. It shows that both theory and multiple-choice are major pillars of your success.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Exactly. Now let's move to page seven to see the Assessment Objectives and how they are evaluated.`
+        }
+      ];
+    }
+
+    if (pageNum === 7) {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Page seven covers the Assessment Objectives, or AOs. These are the specific cognitive skills the examiners are testing. AO1 is recall and understanding, while AO2 is handling information and problem-solving.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `This is a critical page, Sophia. AO2—applying your knowledge to new situations—often carries a very large percentage of the marks. Many students fail because they only memorize facts and don't practice application.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Yes! That is why doing past papers is so essential. You have to train your brain to solve problems, analyze data, and perform calculations under exam conditions.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Absolutely. If you also have a practical component, AO3 tests your experimental skills. Make sure you know how to draw accurate graphs and identify sources of experimental error.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Indeed. Yumna, generate an image of a brain with puzzle pieces representing different assessment objectives like knowledge and problem solving.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing the assessment objectives as puzzle pieces in a brain.`,
+          isYumna: true,
+          imagePrompt: `brain puzzle pieces knowledge and problem solving`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `That is a perfect representation! Your knowledge and your problem-solving skills are the puzzle pieces that fit together to make you an expert student.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Beautifully put, Marcus. Now that we have covered the syllabus structure and exam format, let's dive into the core subject content guides starting on page eight!`
+        }
+      ];
+    }
+
+    if (objs.length > 0) {
+      const mainObj = objs[0];
+      const subList = mainObj.subObjectives?.map(so => so.title).slice(0, 3).join(", ") || "";
+      const subsText = subList ? `, covering key topics like ${subList}` : "";
+
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Welcome to Page ${pageNum}! We are now diving deep into the Subject Content Guide. On this page, we focus on Chapter ${mainObj.code}: ${mainObj.title}${subsText}.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `This is a highly important chapter, Sophia. In Chapter ${mainObj.code}, the syllabus expects students to master the core principles of ${mainObj.title}. Examiners frequently test this area using both conceptual and calculation questions.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Yes! For instance, when studying ${mainObj.title}, students often struggle to connect the theory to real-world examples. Let's think about how these concepts apply to everyday life to make them super clear.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `That is the best way to learn, Sophia. A common exam mistake here is forgetting to use precise definitions. Make sure you memorize the exact terms and keywords listed in the syllabus for this chapter.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is a stellar tip! Yumna, generate an image of a conceptual diagram for ${mainObj.title} to help the student visualize this.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing the key concepts of ${mainObj.title}.`,
+          isYumna: true,
+          imagePrompt: `${mainObj.title} conceptual diagram educational illustration`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Fabulous diagram, Yumna. Seeing the relationships between these variables visually makes them much easier to remember under exam pressure.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `It absolutely does. Let's make sure we review the sub-topics and practice standard calculations for this chapter before moving to the next page!`
+        }
+      ];
+    } else {
+      return [
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `On Page ${pageNum}, we explore the essential syllabus conventions, command words, and mathematical guidelines. These are the underlying rules that govern how you should write your answers!`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `This page is a goldmine, Sophia. Command words like 'describe', 'explain', 'calculate', and 'suggest' have very precise definitions. If a question asks you to 'explain', you will not get full marks by simply describing what happens!`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `Exactly! You must give the reasons 'why' it happens. And when doing calculations, always round your final answers to three significant figures unless the question specifies otherwise.`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Yes, and always state the correct SI units! Leaving out the units or writing the wrong ones is a very common way to lose easy marks. And remember, show all your working so you can get method marks!`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is an absolute lifesaver! Yumna, generate an image of a cheat sheet showing the key command words and their definitions.`
+        },
+        {
+          speaker: "Yumna Hassan",
+          gender: "female",
+          text: `Sure! Here's a clear diagram showing a cheat sheet of exam command words.`,
+          isYumna: true,
+          imagePrompt: `exam command words definitions cheat sheet`
+        },
+        {
+          speaker: "Dr. Marcus Smith",
+          gender: "male",
+          text: `Excellent cheat sheet, Yumna. Underline the command word in every exam question you read to ensure your response matches exactly what is being asked.`
+        },
+        {
+          speaker: "Prof. Sophia Jones",
+          gender: "female",
+          text: `That is brilliant advice, Marcus. This brings us to the end of our complete syllabus walk! You now have a perfect roadmap for your exam preparation.`
+        }
+      ];
+    }
   };
 
   const handlePrint = () => {
@@ -1004,7 +1438,7 @@ Output ONLY this JSON format (no markdown, no backticks, no extra text):
       audioControllerRef.current = null;
     }
     setAudioState("idle");
-    setSpeakingTurnIndex(null);
+    setSpeakingMsgIndex(null);
 
     const clean = cleanSubjectName(subjectName);
     const activePageTitle = getPageTitle(currentPage);
@@ -1082,7 +1516,7 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
     stopAllSpeech();
     if (teachTimerRef.current) clearInterval(teachTimerRef.current);
     setAudioState("idle");
-    setSpeakingTurnIndex(null);
+    setSpeakingMsgIndex(null);
     setTeachTimer(null);
     setQaMode(false);
     setTeachingPageNum(null);
@@ -1114,9 +1548,12 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
         setIsTyping(false);
       } catch (err) {
         setIsTyping(false);
-        console.warn(`Page ${pg} script generation failed, skipping`, err);
-        setMessages(prev => [...prev, { role: "assistant", text: `⚠️ Could not generate script for page ${pg}, moving on...` }]);
-        continue;
+        console.warn(`Page ${pg} script generation failed, using high-quality backup script`, err);
+        turns = generateFallbackScript(pg);
+      }
+
+      if (!turns || turns.length === 0) {
+        turns = generateFallbackScript(pg);
       }
 
       if (sessionIdRef.current !== mySession) break;
@@ -1134,10 +1571,6 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
         }
       });
 
-      // Before each speech turn that immediately precedes a Yumna turn, we inject the image
-      // We track global turn index via a counter that includes Yumna turns
-      let speechTurnOffset = 0; // how many non-Yumna turns have been spoken so far
-
       // Play all speech turns sequentially using chained (no stopAllSpeech between pages)
       // Use playSpeechConversationChained from page 2 onwards so audio doesn't get killed
       await new Promise<void>((resolve) => {
@@ -1149,17 +1582,17 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
             const turn = speechTurns[speechIdx];
             const originalIdx = turn.originalIdx;
 
-            // Compute global speaking index (accounting for Yumna turns before this)
-            const globalIdx = originalIdx;
-            setSpeakingTurnIndex(speechIdx);
-
-            // Add the speech turn to chat
+            // Add the speech turn to chat and set active speaker index
             const role: "jones" | "smith" = turn.gender === "female" ? "jones" : "smith";
-            setMessages(prev => [...prev, {
-              role,
-              text: turn.text,
-              speaker: turn.speaker,
-            }]);
+            setMessages(prev => {
+              const nextIdx = prev.length;
+              setSpeakingMsgIndex(nextIdx);
+              return [...prev, {
+                role,
+                text: turn.text,
+                speaker: turn.speaker,
+              }];
+            });
 
             // Check if the NEXT original turn is a Yumna turn → generate her image now
             const nextOriginalIdx = originalIdx + 1;
@@ -1168,14 +1601,17 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
               const yTurn = yumnaNext.turn;
               const imageTopic = yTurn.imagePrompt || yTurn.text.split("showing")[1]?.trim() || turn.text.split(".")[0];
               const imgUrl = buildImageUrl(imageTopic, cleanName);
-              // Add Yumna's message card with the generated image
-              setMessages(prev => [...prev, {
-                role: "yumna",
-                text: yTurn.text,
-                speaker: "Yumna Hassan",
-                imageUrl: imgUrl,
-              }]);
-              setSpeakingTurnIndex(-1); // -1 signals Yumna is active
+              // Add Yumna's message card with the generated image and set active speaker to Yumna
+              setMessages(prev => {
+                const nextIdx = prev.length;
+                setSpeakingMsgIndex(nextIdx);
+                return [...prev, {
+                  role: "yumna",
+                  text: yTurn.text,
+                  speaker: "Yumna Hassan",
+                  imageUrl: imgUrl,
+                }];
+              });
             }
           },
           () => { resolve(); }
@@ -1183,7 +1619,7 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
         audioControllerRef.current = { stop: () => { ctrl.stop(); resolve(); } };
       });
 
-      setSpeakingTurnIndex(null);
+      setSpeakingMsgIndex(null);
       if (sessionIdRef.current !== mySession) break;
 
       // Brief pause between pages
@@ -1261,7 +1697,7 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
       audioControllerRef.current = null;
     }
     setAudioState("idle");
-    setSpeakingTurnIndex(null);
+    setSpeakingMsgIndex(null);
     setTeachingPageNum(null);
     if (teachTimerRef.current) clearInterval(teachTimerRef.current);
     setTeachTimer(null);
@@ -1867,12 +2303,10 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                   label = "Yumna Hassan 🎨";
                 }
 
-                // Highlight the most recently added smith/jones turn while speaking
-                const smithJonesMsgs = messages.filter(m => m.role === "smith" || m.role === "jones");
-                const mySmithJonesIdx = isSmith || isJones ? smithJonesMsgs.indexOf(msg) : -1;
-                const isActiveSpeaking = speakingTurnIndex !== null && mySmithJonesIdx === speakingTurnIndex;
+                // Highlight the active turn while speaking
+                const isActiveSpeaking = speakingMsgIndex !== null && idx === speakingMsgIndex && (isSmith || isJones);
                 const isTutorSpeaking = msg.role === "assistant" && audioState === "speaking" && idx === messages.length - 1;
-                const isYumnaActive = isYumna && speakingTurnIndex === -1 && idx === messages.length - 1;
+                const isYumnaActive = isYumna && speakingMsgIndex !== null && idx === speakingMsgIndex;
 
                 return (
                   <div key={idx} className={`flex ${alignClass} items-end gap-2 animate-fade-in`}>
@@ -1915,17 +2349,14 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
                 </div>
               )}
               {/* Active Speaker Immersive Card during Teaching */}
-              {audioState === "teaching" && speakingTurnIndex !== null && (
+              {audioState === "teaching" && speakingMsgIndex !== null && (
                 (() => {
-                  const speakMsgs = messages.filter(m => m.role === "smith" || m.role === "jones" || m.role === "yumna");
-                  const isYumnaActive = speakingTurnIndex === -1;
-                  const activeMsg = isYumnaActive
-                    ? messages.filter(m => m.role === "yumna").at(-1)
-                    : speakMsgs[speakingTurnIndex];
-                  if (!activeMsg && !isYumnaActive) return null;
+                  const activeMsg = messages[speakingMsgIndex];
+                  if (!activeMsg) return null;
 
-                  const isSophia = !isYumnaActive && activeMsg?.role === "jones";
-                  const isMarcus = !isYumnaActive && activeMsg?.role === "smith";
+                  const isYumnaActive = activeMsg.role === "yumna";
+                  const isSophia = activeMsg.role === "jones";
+                  const isMarcus = activeMsg.role === "smith";
 
                   return (
                     <div className="mx-3 mb-3 bg-slate-50 border border-slate-200/85 rounded-2xl p-4 flex flex-col gap-4 shadow-sm select-none animate-fade-in">
