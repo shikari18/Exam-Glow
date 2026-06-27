@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Search,
   X,
@@ -19,7 +19,12 @@ import {
   ArrowRight,
   GraduationCap,
   Sparkles,
+  FileText,
+  ExternalLink,
+  Loader2,
+  Bot,
 } from "lucide-react";
+import { API_BASE } from "@/lib/api-client";
 
 export const Route = createFileRoute("/subjects")({
   head: () => ({ meta: [{ title: "Cambridge IGCSE Syllabus Directory — ExamGlow" }] }),
@@ -181,8 +186,122 @@ const getNotesSubjectName = (name: string): string => {
   return code ? `${clean} - ${code}` : clean;
 };
 
+// ── Inline Syllabus PDF Viewer (full-screen overlay, same as past papers) ────
+interface SyllabusViewerState {
+  subjectName: string;
+  subjectCode: string;
+}
+
+function SyllabusInlineViewer({
+  subject,
+  onClose,
+}: {
+  subject: SyllabusViewerState;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Extract 4-digit code from name like "Accounting - 0452"
+  const codeMatch = subject.subjectCode.match(/\d{4}/);
+  const code = codeMatch ? codeMatch[0] : subject.subjectCode;
+  const pdfUrl = `${API_BASE}/api/examglow/syllabus/pdf/?code=${code}`;
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!loading) {
+      hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
+    }
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, [loading]);
+
+  const toggleControls = () => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    setControlsVisible(v => {
+      if (!v) return true;
+      hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
+      return true;
+    });
+    setControlsVisible(v => !v);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col" onClick={toggleControls}>
+      {/* Controls overlay */}
+      <div
+        className={`absolute inset-x-0 top-0 z-10 flex flex-col transition-all duration-300 ${
+          controlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="bg-black/80 backdrop-blur-md px-4 pt-safe-top py-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
+            <FileText className="w-4 h-4 text-red-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-white truncate">{subject.subjectName} — Syllabus</p>
+            <p className="text-[11px] text-white/50">Official Cambridge PDF</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white"
+              title="Open in new tab"
+              onClick={e => e.stopPropagation()}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Loading state */}
+      {loading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 z-5">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-red-400 animate-spin" />
+          </div>
+          <p className="font-semibold text-sm text-white">Loading syllabus PDF…</p>
+          <p className="text-xs text-white/40">Fetching from Cambridge official archive</p>
+        </div>
+      )}
+
+      {/* PDF iframe */}
+      <iframe
+        src={pdfUrl}
+        className="flex-1 w-full border-0 block"
+        title={`${subject.subjectName} Syllabus PDF`}
+        onLoad={() => setLoading(false)}
+        onClick={e => e.stopPropagation()}
+      />
+
+      {/* Tap hint */}
+      {!loading && controlsVisible && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white/60 text-[10px] px-3 py-1 rounded-full pointer-events-none">
+          Tap to hide controls · Esc to close
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Subjects() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [openSyllabus, setOpenSyllabus] = useState<SyllabusViewerState | null>(null);
 
   const parsedSubjects = useMemo(() => {
     return SUBJECT_LIST.map((name, index) => {
@@ -331,14 +450,20 @@ function Subjects() {
                         </div>
 
                         <div className="mt-5 border-t border-slate-50 pt-4 flex gap-2">
-                          <Link
-                            to="/syllabus/$subjectId"
-                            params={{ subjectId: subject.subjectId }}
+                          <button
+                            onClick={() => {
+                              const codeMatch = subject.name.match(/\s*-\s*(\d{4})(?:\s|$)/);
+                              const code = codeMatch ? codeMatch[1] : subject.subjectId;
+                              setOpenSyllabus({
+                                subjectName: subject.name.replace(/\s*-\s*\d{4}$/, "").trim(),
+                                subjectCode: code,
+                              });
+                            }}
                             className="flex-1 py-2 rounded-xl border border-slate-200/80 text-[10px] font-bold inline-flex items-center justify-center gap-1.5 hover:bg-primary hover:text-white hover:border-primary transition-all text-slate-600 bg-white cursor-pointer"
                           >
                             <GraduationCap className="w-3.5 h-3.5 shrink-0" />
                             <span>View Syllabus</span>
-                          </Link>
+                          </button>
                           <Link
                             to="/subject-notes/$subject"
                             params={{ subject: getNotesSubjectName(subject.name) }}
@@ -399,6 +524,14 @@ function Subjects() {
       </main>
 
       <Footer />
+
+      {/* Inline Syllabus PDF Viewer */}
+      {openSyllabus && (
+        <SyllabusInlineViewer
+          subject={openSyllabus}
+          onClose={() => setOpenSyllabus(null)}
+        />
+      )}
     </div>
   );
 }
