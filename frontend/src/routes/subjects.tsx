@@ -179,6 +179,20 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
 
   // PDF state
   const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState(false);
+
+  // Pre-check: hit the endpoint with a HEAD-style fetch to catch 404 before iframe
+  useEffect(() => {
+    setPdfLoading(true);
+    setPdfError(false);
+    fetch(pdfUrl, { method: "GET", signal: AbortSignal.timeout(12000) })
+      .then(res => {
+        if (!res.ok) { setPdfError(true); setPdfLoading(false); }
+        // If ok, let iframe handle the display — just cancel the fetch body
+        else res.body?.cancel();
+      })
+      .catch(() => { setPdfError(true); setPdfLoading(false); });
+  }, [pdfUrl]);
 
   // Bot panel state
   const [botOpen, setBotOpen] = useState(false);
@@ -390,7 +404,7 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
 
       {/* ── PDF iframe ── */}
       <div className="flex-1 relative">
-        {pdfLoading && (
+        {pdfLoading && !pdfError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 z-10">
             <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-red-400 animate-spin" />
@@ -399,12 +413,51 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
             <p className="text-xs text-white/40">Fetching from Cambridge official archive</p>
           </div>
         )}
-        <iframe
-          src={pdfUrl}
-          className="w-full h-full border-0 block"
-          title={`${subject.subjectName} Syllabus`}
-          onLoad={() => setPdfLoading(false)}
-        />
+        {pdfError ? (
+          <div className="flex-1 h-full flex flex-col items-center justify-center bg-slate-900 gap-5 p-8">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+              <FileText className="w-8 h-8 text-amber-400" />
+            </div>
+            <div className="text-center max-w-sm">
+              <h3 className="font-bold text-white text-base">Syllabus PDF Not Available</h3>
+              <p className="text-white/50 text-sm mt-2 leading-relaxed">
+                The official Cambridge syllabus PDF for <strong className="text-white/80">{subject.subjectName}</strong> could not be found in the archive right now.
+              </p>
+              <p className="text-white/30 text-xs mt-3">
+                You can still use the AI Class below to learn about this subject.
+              </p>
+            </div>
+            <a
+              href={`https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-igcse-${subject.subjectName.toLowerCase().replace(/\s+/g,"-")}-${code}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl border border-white/20 transition-all"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Try Cambridge website
+            </a>
+          </div>
+        ) : (
+          <iframe
+            key={pdfUrl}
+            src={pdfUrl}
+            className="w-full h-full border-0 block"
+            title={`${subject.subjectName} Syllabus`}
+            onLoad={(e) => {
+              // Detect if iframe loaded the DRF browsable API or an error page instead of a PDF
+              setPdfLoading(false);
+              try {
+                const doc = (e.currentTarget as HTMLIFrameElement).contentDocument;
+                if (doc && doc.contentType && !doc.contentType.includes("pdf")) {
+                  setPdfError(true);
+                }
+              } catch {
+                // cross-origin — assume OK if we got here
+              }
+            }}
+            onError={() => { setPdfLoading(false); setPdfError(true); }}
+          />
+        )}
       </div>
 
       {/* ── ✋ Interrupt button (only while teaching) ── */}
