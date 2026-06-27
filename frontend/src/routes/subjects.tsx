@@ -656,17 +656,19 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
 function Subjects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openSyllabus, setOpenSyllabus] = useState<SyllabusViewerState | null>(null);
-  const [availableCodes, setAvailableCodes] = useState<Set<string> | null>(null);
 
-  // Fetch which subject codes have valid syllabus PDFs
-  useEffect(() => {
-    fetch(`${API_BASE}/api/examglow/syllabus/available/`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.available) setAvailableCodes(new Set<string>(data.available));
-      })
-      .catch(() => { /* graceful degradation — show all */ });
-  }, []);
+  // Static set of codes that have verified syllabus PDFs
+  const availableCodes = new Set([
+    "0452","0610","0620","0625","0580","0478","0455","0450","0500","0460",
+    "0470","0606","0417","0495","0970","0971","0972","0980","0984","0986",
+    "0987","0990","0976","0977","0607","0653","0654","0600","0697","0652",
+    "0479","0264","0454","0471","0680","0266","0490","0493","0448","0520",
+    "0501","0525","0505","0530","0502","0474","0544","0508","0523","0509",
+    "0549","0539","0531","0548","0538","0696","0546","0535","0480","0504",
+    "0513","0518","0695","0262","0698","0499","0408","0400","0411","0410",
+    "0445","0413","0648","0457","0475","0510","0511","0472","0985","0989",
+    "0994","0979","0978","0995",
+  ]);
 
   const parsedSubjects = useMemo(() => {
     return SUBJECT_LIST
@@ -678,13 +680,11 @@ function Subjects() {
         accent: ACCENT_COLORS[index % ACCENT_COLORS.length],
       }))
       .filter(subject => {
-        // While still loading, show all subjects (graceful degradation)
-        if (availableCodes === null) return true;
         const m = subject.name.match(/\s*-\s*(\d{4})(?:\s|$)/);
         const code = m ? m[1] : null;
         return code ? availableCodes.has(code) : false;
       });
-  }, [availableCodes]);
+  }, []);
 
   const filteredGroups = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
