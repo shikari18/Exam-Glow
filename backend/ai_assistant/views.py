@@ -897,48 +897,98 @@ class GenerateTopicNotesView(APIView):
             raise ValueError('Could not parse valid JSON from AI response')
 
         def _build_fallback(topic: str, subject: str, text: str) -> dict:
-            """Build a minimal valid notes structure from plain text when JSON fails."""
-            paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+            """Build a minimal valid notes structure from plain text when JSON fails.
+            First tries to parse text as JSON one final time, then falls back to plain structure."""
+            # Final attempt: maybe text IS valid JSON but repair missed it
+            try:
+                parsed = json.loads(text.strip())
+                if isinstance(parsed, dict) and 'pages' in parsed:
+                    return parsed
+            except Exception:
+                pass
+
+            # Strip any JSON-like opening to get readable text
+            clean = text.strip()
+            if clean.startswith('{') or clean.startswith('['):
+                # It's broken JSON — don't show it as text
+                clean = f"Comprehensive notes for {topic} in {subject}. Please use the Try Again button to regenerate."
+
+            paragraphs = [p.strip() for p in clean.split('\n\n') if p.strip() and not p.strip().startswith('{')]
+            if not paragraphs:
+                paragraphs = [f"Revision notes for {topic}. Click Try Again to regenerate."]
+
             blocks = []
-            for p in paragraphs[:8]:
+            for p in paragraphs[:6]:
                 if p.startswith('- ') or p.startswith('• '):
                     items = [{'text': line.lstrip('-• ').strip(), 'bold': False, 'sub': []}
                              for line in p.split('\n') if line.strip()]
-                    blocks.append({'kind': 'bullets', 'items': items})
+                    if items:
+                        blocks.append({'kind': 'bullets', 'items': items})
                 else:
                     blocks.append({'kind': 'intro', 'text': p})
 
             return {
                 'subject': subject,
-                'title': f'Study Guide: {topic}',
-                'summary': paragraphs[0] if paragraphs else f'Revision notes for {topic}.',
-                'pages': [{'section': 'Revision Notes', 'blocks': blocks or [{'kind': 'intro', 'text': text[:500]}]}]
+                'title': f'Notes: {topic}',
+                'summary': paragraphs[0][:200] if paragraphs else f'Revision notes for {topic}.',
+                'pages': [{'section': 'Revision Notes', 'blocks': blocks or [
+                    {'kind': 'intro', 'text': f'Notes for {topic} in {subject}. Click Try Again to reload.'}
+                ]}]
             }
 
         # Compact prompt — 2 pages only, minimal example, very explicit JSON-only instruction
         PROMPT_TEMPLATE = (
-            "Generate IGCSE revision notes for '{topic}' in '{subject}'. "
-            "Output ONLY a JSON object — no text before or after, no markdown, no backticks.\n\n"
-            "JSON format:\n"
-            '{{"subject":"{subject}","title":"Notes: {topic}","summary":"Brief 2-sentence overview.",'
+            "You are an expert IGCSE examiner writing comprehensive revision notes for students. "
+            "Generate DETAILED notes for the topic '{topic}' in '{subject}'. "
+            "These notes must be thorough enough to prepare a student for their exam — cover EVERY concept, fact, definition, process, and example. DO NOT summarise. Write fully.\n\n"
+            "Output ONLY a JSON object. No text before or after. No markdown fences.\n\n"
+            "STRICT JSON format:\n"
+            '{{"subject":"{subject}","title":"Notes: {topic}","summary":"A comprehensive 3-sentence explanation of {topic} and why it matters for {subject}.",'
             '"pages":['
-            '{{"section":"Key Concepts","blocks":['
-            '{{"kind":"intro","text":"Opening paragraph with **key terms** bolded."}},'
-            '{{"kind":"bullets","items":[{{"text":"Point 1","bold":false,"sub":[]}},{{"text":"Point 2","bold":false,"sub":[]}}]}},'
-            '{{"kind":"definition","term":"Term","definition":"Definition."}},'
-            '{{"kind":"tip","text":"Exam tip."}},'
-            '{{"kind":"image","prompt":"Educational diagram of {topic} IGCSE labeled white background","caption":"Diagram: {topic}","side":"full"}}'
+            '{{"section":"Introduction & Core Concepts","blocks":['
+            '{{"kind":"intro","text":"Write 3-4 sentences introducing {topic}. Define key concepts. Use **bold** for all technical terms on first use."}},'
+            '{{"kind":"bullets","items":['
+            '{{"text":"First major concept or fact about {topic} — explain fully in 1-2 sentences","bold":false,"sub":[]}},'
+            '{{"text":"Second major concept — explain fully","bold":false,"sub":[]}},'
+            '{{"text":"Third major concept — explain fully","bold":false,"sub":[]}},'
+            '{{"text":"Fourth major concept — explain fully","bold":false,"sub":[]}}'
             ']}},'
-            '{{"section":"Key Facts & Applications","blocks":['
-            '{{"kind":"intro","text":"Second section paragraph."}},'
-            '{{"kind":"table","headers":["Item","Detail"],"rows":[["A","B"],["C","D"]]}},'
-            '{{"kind":"bullets","items":[{{"text":"Fact 1","bold":false,"sub":[]}},{{"text":"Fact 2","bold":false,"sub":[]}}]}},'
-            '{{"kind":"tip","text":"Second exam tip."}},'
-            '{{"kind":"image","prompt":"Second educational diagram of {topic}","caption":"Diagram 2","side":"full"}}'
-            ']}}'
-            ']}}'
-            '\n\nNow write the real notes following this EXACT structure for {topic} in {subject}. '
-            'Return only the JSON — start with {{ and end with }}.'
+            '{{"kind":"definition","term":"Most important term in {topic}","definition":"Full precise definition as an examiner would expect. Include context and how it applies."}},'
+            '{{"kind":"image","prompt":"Clear educational diagram showing {topic} for IGCSE {subject}, labeled, white background","caption":"Figure: {topic}","side":"full"}}'
+            ']}},'
+            '{{"section":"Detailed Explanation & Mechanisms","blocks":['
+            '{{"kind":"intro","text":"Write 3-4 sentences explaining HOW {topic} works — the mechanism, process, or principle in detail."}},'
+            '{{"kind":"bullets","items":['
+            '{{"text":"Step or mechanism 1 — detailed explanation","bold":false,"sub":["sub-point a","sub-point b"]}},'
+            '{{"text":"Step or mechanism 2 — detailed explanation","bold":false,"sub":[]}},'
+            '{{"text":"Step or mechanism 3 — detailed explanation","bold":false,"sub":[]}},'
+            '{{"text":"Key relationship or factor — explain in full","bold":false,"sub":[]}}'
+            ']}},'
+            '{{"kind":"table","headers":["Term / Item","Description / Value"],"rows":[["Key term 1","Full explanation"],["Key term 2","Full explanation"],["Key term 3","Full explanation"],["Key term 4","Full explanation"]]}},'
+            '{{"kind":"image","prompt":"Detailed diagram illustrating the mechanism of {topic} for IGCSE, labeled arrows, white background","caption":"Diagram: Mechanism of {topic}","side":"full"}}'
+            ']}},'
+            '{{"section":"Applications, Examples & Comparisons","blocks":['
+            '{{"kind":"intro","text":"Write 2-3 sentences on real-world applications or examples of {topic}."}},'
+            '{{"kind":"bullets","items":['
+            '{{"text":"Real-world application or example 1 — explain concretely","bold":false,"sub":[]}},'
+            '{{"text":"Real-world application or example 2","bold":false,"sub":[]}},'
+            '{{"text":"Comparison or contrast with related concept — explain the difference","bold":false,"sub":[]}}'
+            ']}},'
+            '{{"kind":"definition","term":"Second important term in {topic}","definition":"Full precise definition with context."}},'
+            '{{"kind":"warning","text":"A common misconception students have about {topic} — explain what the mistake is and what is correct."}}'
+            ']}},'
+            '{{"section":"Exam Technique & Key Points","blocks":['
+            '{{"kind":"intro","text":"Write 2-3 sentences on what examiners look for when answering questions about {topic}."}},'
+            '{{"kind":"bullets","items":['
+            '{{"text":"Key fact or formula to memorise for {topic}","bold":true,"sub":[]}},'
+            '{{"text":"Second key fact to memorise","bold":true,"sub":[]}},'
+            '{{"text":"Third key fact to memorise","bold":true,"sub":[]}}'
+            ']}},'
+            '{{"kind":"tip","text":"Exam tip: explain the most important thing to remember about {topic} in an exam answer. What specific words or phrases gain marks?"}},'
+            '{{"kind":"tip","text":"Second exam tip: what is the most common error students make and how to avoid it?"}}'
+            ']}}]'
+            '}}\n\n'
+            "Write the real complete notes following this structure exactly. Every text field must have full sentences — not placeholders. Output only the JSON."
         )
 
         prompt = PROMPT_TEMPLATE.format(topic=topic, subject=subject or topic)
@@ -946,8 +996,8 @@ class GenerateTopicNotesView(APIView):
         try:
             response_text = async_to_sync(ai.chat)(
                 [{'role': 'user', 'content': prompt}],
-                max_tokens=6000,
-                timeout=60,
+                max_tokens=8000,
+                timeout=90,
             )
 
             if isinstance(response_text, str) and (
