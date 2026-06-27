@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getSyllabusData } from "@/data/syllabus";
-import { apiFetch } from "@/lib/api-client";
+import { groqAsk } from "@/lib/groq-client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowLeft, BookOpen, ChevronRight, ChevronDown, ChevronUp,
@@ -671,14 +671,14 @@ function SyllabusNotes() {
   const [, forceUpdate] = useState(0);
   const triggerRender = useCallback(() => forceUpdate(n => n + 1), []);
 
-  // Fetch notes for a single topic — retries once with simpler request on malformed JSON
+  // ── Generate notes directly via Groq (fast, no backend overload, stored permanently) ──
   const fetchTopic = useCallback(async (topicTitle: string, unitTitle: string, attempt = 0) => {
     const existing = cacheRef.current.get(topicTitle);
     if (existing && existing.status !== "pending") return;
 
-    // Check localStorage first — if already generated, use it (never regenerate)
+    // Load from localStorage first — never regenerate if valid notes already stored
     const stored = loadFromStorage(subjectId, topicTitle);
-    if (stored) {
+    if (stored && isValidNotes(stored)) {
       cacheRef.current.set(topicTitle, { status: "done", data: stored });
       triggerRender();
       return;
@@ -688,27 +688,61 @@ function SyllabusNotes() {
     triggerRender();
 
     try {
-      const result = await apiFetch<NotesData>("/api/ai/generate-notes/", {
-        method: "POST",
-        body: JSON.stringify({
-          topic: topicTitle,
-          subject: `${decodedName} (${code}) — ${unitTitle}`,
-        }),
+      const systemPrompt = `You are an expert IGCSE examiner writing detailed revision notes for students. 
+Write comprehensive, thorough notes — NOT summaries. Cover every concept, definition, mechanism, example, and exam tip.
+Use this exact markdown format:
+## Section Title
+### Subsection (if needed)
+**Key term** — definition or explanation
+- Bullet point with full explanation
+- Another bullet with complete detail
+| Column 1 | Column 2 |
+|----------|----------|
+| data     | data     |
+> EXAM TIP: tip text here
+> COMMON MISTAKE: mistake text here
+Be thorough. A student should be able to answer any exam question on this topic after reading your notes.`;
+
+      const userPrompt = `Write complete, detailed IGCSE revision notes for the topic: **${topicTitle}**
+Subject: ${decodedName} (${code}) — ${unitTitle}
+
+Requirements:
+- Write at least 6 sections covering ALL aspects of this topic
+- Each section must have multiple paragraphs, bullet points, definitions, and examples
+- Include at minimum: introduction, key definitions, detailed mechanisms/processes, worked examples, comparisons/tables, common mistakes, and exam tips
+- Do NOT summarise — write every detail a student needs
+- Use **bold** for key terms on first use
+- Use tables where comparisons are needed
+- Include > EXAM TIP: for exam technique
+- Include > COMMON MISTAKE: for misconceptions
+
+Start writing now:`;
+
+      const markdown = await groqAsk(systemPrompt, userPrompt, {
+        max_tokens: 4096,
+        temperature: 0.4,
       });
-      // Persist to localStorage so it never regenerates
-      saveToStorage(subjectId, topicTitle, result);
-      cacheRef.current.set(topicTitle, { status: "done", data: result });
+
+      // Validate it's not an error/overload message
+      if (!markdown || markdown.length < 200 || markdown.toLowerCase().includes("overloaded") || markdown.toLowerCase().includes("try again")) {
+        throw new Error("AI temporarily unavailable. Please try again in a moment.");
+      }
+
+      // Convert markdown to our NotesData structure
+      const notesData = markdownToNotesData(topicTitle, decodedName, unitTitle, markdown);
+      
+      // Save permanently to localStorage
+      saveToStorage(subjectId, topicTitle, notesData);
+      cacheRef.current.set(topicTitle, { status: "done", data: notesData });
     } catch (e: any) {
-      // Retry once if malformed
-      if (attempt === 0 && e?.message?.includes("malformed")) {
+      const msg = e?.message ?? "Failed to generate notes.";
+      // Retry once after delay on overload
+      if (attempt === 0 && (msg.includes("overload") || msg.includes("temporarily") || msg.includes("429"))) {
         cacheRef.current.set(topicTitle, { status: "pending" });
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 5000));
         return fetchTopic(topicTitle, unitTitle, 1);
       }
-      cacheRef.current.set(topicTitle, {
-        status: "error",
-        error: e?.message ?? "Failed to load notes.",
-      });
+      cacheRef.current.set(topicTitle, { status: "error", error: msg });
     }
     triggerRender();
   }, [decodedName, code, subjectId, triggerRender]);
@@ -726,10 +760,14 @@ function SyllabusNotes() {
     // Load all from localStorage immediately (instant, no network)
     for (const t of allTopics) {
       const stored = loadFromStorage(subjectId, t.topicTitle);
-      if (stored) {
+      if (stored && isValidNotes(stored)) {
         cacheRef.current.set(t.topicTitle, { status: "done", data: stored });
-      } else if (!cacheRef.current.has(t.topicTitle)) {
-        cacheRef.current.set(t.topicTitle, { status: "pending" });
+      } else {
+        // Clear invalid/error data so it regenerates
+        try { localStorage.removeItem(storageKey(subjectId, t.topicTitle)); } catch { /* ignore */ }
+        if (!cacheRef.current.has(t.topicTitle)) {
+          cacheRef.current.set(t.topicTitle, { status: "pending" });
+        }
       }
     }
     triggerRender();
@@ -875,6 +913,164 @@ function SyllabusNotes() {
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function isValidNotes(data: NotesData): boolean {
+  if (!data || !Array.isArray(data.pages) || data.pages.length === 0) return false;
+  // Check it's not an error/overload message stored as notes
+  const firstBlock = data.pages[0]?.blocks?.[0];
+  if (!firstBlock) return false;
+  const text = (firstBlock as any).text ?? "";
+  if (text.toLowerCase().includes("overloaded") || text.toLowerCase().includes("try again")) return false;
+  // Must have meaningful content
+  const totalText = data.pages.flatMap(p => p.blocks).map(b => (b as any).text ?? "").join(" ");
+  return totalText.length > 200;
+}
+
+/** Convert Groq markdown output to NotesData blocks for rendering */
+function markdownToNotesData(topic: string, subject: string, unitTitle: string, markdown: string): NotesData {
+  const lines = markdown.split("\n");
+  const pages: NotePage[] = [];
+  let currentPage: NotePage | null = null;
+  let currentBlocks: NoteBlock[] = [];
+  let bulletItems: BulletItem[] = [];
+  let tableLines: string[] = [];
+  let inTable = false;
+  let summary = "";
+
+  const flushBullets = () => {
+    if (bulletItems.length > 0) {
+      currentBlocks.push({ kind: "bullets", items: [...bulletItems] });
+      bulletItems = [];
+    }
+  };
+
+  const flushTable = () => {
+    if (tableLines.length > 0) {
+      const rows = tableLines
+        .filter(l => !l.match(/^[\s|:-]+$/))
+        .map(l => l.split("|").map(c => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1));
+      if (rows.length > 1) {
+        currentBlocks.push({ kind: "table", headers: rows[0], rows: rows.slice(1) });
+      }
+      tableLines = [];
+      inTable = false;
+    }
+  };
+
+  const ensurePage = (title: string) => {
+    if (currentPage) {
+      flushBullets();
+      flushTable();
+      currentPage.blocks = [...currentBlocks];
+      if (currentPage.blocks.length > 0) pages.push(currentPage);
+    }
+    currentPage = { section: title, blocks: [] };
+    currentBlocks = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+
+    // H2 = new section page
+    if (line.startsWith("## ")) {
+      ensurePage(line.slice(3).trim());
+      continue;
+    }
+
+    // H3 = heading block within page
+    if (line.startsWith("### ")) {
+      flushBullets(); flushTable();
+      currentBlocks.push({ kind: "heading", text: line.slice(4).trim() });
+      continue;
+    }
+
+    // Exam tip / common mistake blockquote
+    if (line.startsWith("> EXAM TIP:") || line.startsWith("> Exam tip:")) {
+      flushBullets(); flushTable();
+      currentBlocks.push({ kind: "tip", text: line.replace(/^> (EXAM TIP:|Exam tip:)\s*/i, "").trim() });
+      continue;
+    }
+    if (line.startsWith("> COMMON MISTAKE:") || line.startsWith("> Common mistake:")) {
+      flushBullets(); flushTable();
+      currentBlocks.push({ kind: "warning", text: line.replace(/^> (COMMON MISTAKE:|Common mistake:)\s*/i, "").trim() });
+      continue;
+    }
+    if (line.startsWith("> ")) {
+      flushBullets(); flushTable();
+      const text = line.slice(2).trim();
+      const lc = text.toLowerCase();
+      if (lc.startsWith("exam tip") || lc.startsWith("tip:")) {
+        currentBlocks.push({ kind: "tip", text: text.replace(/^(exam tip:|tip:)\s*/i, "") });
+      } else if (lc.startsWith("common mistake") || lc.startsWith("mistake:")) {
+        currentBlocks.push({ kind: "warning", text: text.replace(/^(common mistake:|mistake:)\s*/i, "") });
+      } else {
+        currentBlocks.push({ kind: "tip", text });
+      }
+      continue;
+    }
+
+    // Table lines
+    if (line.startsWith("|")) {
+      flushBullets();
+      inTable = true;
+      tableLines.push(line);
+      continue;
+    }
+    if (inTable && !line.startsWith("|")) {
+      flushTable();
+    }
+
+    // Bullet points
+    if (line.match(/^[-*•] /) || line.match(/^\s{2,}[-*•] /)) {
+      flushTable();
+      const text = line.replace(/^\s*[-*•] /, "").trim();
+      if (text) bulletItems.push({ text, bold: false, sub: [] });
+      continue;
+    }
+
+    // Empty line
+    if (line.trim() === "") {
+      flushBullets();
+      continue;
+    }
+
+    // Regular paragraph
+    flushBullets(); flushTable();
+    if (line.trim()) {
+      // Check if it looks like a definition (bold term — definition)
+      const defMatch = line.match(/^\*\*(.+?)\*\*\s*[—–-]\s*(.+)$/);
+      if (defMatch) {
+        currentBlocks.push({ kind: "definition", term: defMatch[1].trim(), definition: defMatch[2].trim() });
+      } else {
+        // Extract first paragraph as summary if not set yet
+        if (!summary && pages.length === 0 && currentBlocks.length === 0) {
+          summary = line.replace(/\*\*/g, "").slice(0, 300);
+        }
+        currentBlocks.push({ kind: "intro", text: line.trim() });
+      }
+    }
+  }
+
+  // Flush final page
+  flushBullets(); flushTable();
+  if (currentPage) {
+    currentPage.blocks = [...currentBlocks];
+    if (currentPage.blocks.length > 0) pages.push(currentPage);
+  } else if (currentBlocks.length > 0) {
+    pages.push({ section: "Revision Notes", blocks: currentBlocks });
+  }
+
+  if (pages.length === 0) {
+    pages.push({ section: "Revision Notes", blocks: [{ kind: "intro", text: markdown.slice(0, 1000) }] });
+  }
+
+  return {
+    subject,
+    title: `Notes: ${topic}`,
+    summary: summary || `Comprehensive revision notes for ${topic} in ${subject}.`,
+    pages,
+  };
+}
 
 function findSubjectId(code: string, name: string): string {
   const slugName = name
