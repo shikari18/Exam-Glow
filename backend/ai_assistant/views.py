@@ -875,32 +875,33 @@ class GenerateTopicNotesView(APIView):
             "You are an expert IGCSE curriculum editor. Generate a comprehensive study guide for "
             "the topic '{topic}' in '{subject}'.\n\n"
             "STRICT REQUIREMENTS:\n"
-            "- Generate exactly 6 section pages\n"
-            "- Each section has 4-6 blocks\n"
+            "- Generate exactly 4 section pages (not 6 — exactly 4 to keep JSON valid)\n"
+            "- Each section has 4-5 blocks\n"
             "- Use **bold** for key terms inside text fields\n"
             "- Write equations/formulas as plain text WITHOUT dollar signs (write 'F = ma' not LaTeX)\n"
             "- Include 1 image block per section with an educational diagram prompt\n"
-            "- CRITICAL: Return ONLY valid JSON. No markdown fences, no backticks, no extra text.\n\n"
-            "Return EXACTLY this JSON shape (with 6 real pages):\n"
+            "- CRITICAL: Return ONLY valid JSON. No markdown fences, no backticks, no extra text before or after.\n"
+            "- CRITICAL: Do NOT truncate. Complete ALL 4 pages fully before ending.\n\n"
+            "Return EXACTLY this JSON shape:\n"
             "{{\n"
             '  "subject": "{subject}",\n'
             '  "title": "Study Guide: {topic}",\n'
-            '  "summary": "4-sentence overview of the topic",\n'
+            '  "summary": "3-sentence overview of the topic",\n'
             '  "pages": [\n'
             "    {{\n"
             '      "section": "Section Title",\n'
             '      "blocks": [\n'
             '        {{ "kind": "intro", "text": "Paragraph. Use **bold** for key terms." }},\n'
-            '        {{ "kind": "bullets", "items": [ {{ "text": "Point", "bold": false, "sub": [] }} ] }},\n'
-            '        {{ "kind": "definition", "term": "Term", "definition": "Definition text" }},\n'
-            '        {{ "kind": "table", "headers": ["A", "B"], "rows": [["r1a","r1b"]] }},\n'
-            '        {{ "kind": "tip", "text": "Exam tip text" }},\n'
-            '        {{ "kind": "image", "prompt": "Detailed educational diagram of [concept], textbook style, labeled, white background", "caption": "Figure caption", "side": "full" }}\n'
+            '        {{ "kind": "bullets", "items": [ {{ "text": "Point one", "bold": false, "sub": [] }}, {{ "text": "Point two", "bold": false, "sub": [] }} ] }},\n'
+            '        {{ "kind": "definition", "term": "Term", "definition": "Definition text here." }},\n'
+            '        {{ "kind": "table", "headers": ["Feature", "Description"], "rows": [["Row 1a","Row 1b"],["Row 2a","Row 2b"]] }},\n'
+            '        {{ "kind": "tip", "text": "Exam tip here." }},\n'
+            '        {{ "kind": "image", "prompt": "Educational diagram of [concept] for IGCSE, textbook style, labeled, white background", "caption": "Figure caption", "side": "full" }}\n'
             "      ]\n"
             "    }}\n"
             "  ]\n"
             "}}\n\n"
-            "Generate 6 pages covering all key aspects of '{topic}'. ALL JSON must be complete and valid."
+            "Generate exactly 4 pages. Output raw JSON only — no markdown, no backticks, nothing before or after the JSON object."
         )
 
         prompt = PROMPT_TEMPLATE.format(topic=topic, subject=subject or topic)

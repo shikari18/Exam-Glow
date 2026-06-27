@@ -168,12 +168,29 @@ function getVideosForTopic(topic: string) {
   return [];
 }
 
-function VideoCard({ videoId, title, channel }: { videoId: string; title: string; channel: string }) {
-  const [playing, setPlaying] = useState(false);
-  const thumb = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-  if (playing) {
-    return (
-      <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-black">
+// ─── Mini video player modal ────────────────────────────────────────────────────
+
+function VideoPlayerModal({ videoId, title, channel, onClose }: {
+  videoId: string; title: string; channel: string; onClose: () => void;
+}) {
+  const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  // Close on Escape
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl bg-black rounded-2xl overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Iframe player */}
         <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
           <iframe
             className="absolute inset-0 w-full h-full"
@@ -183,31 +200,70 @@ function VideoCard({ videoId, title, channel }: { videoId: string; title: string
             allowFullScreen
           />
         </div>
-        <div className="bg-slate-900 px-4 py-2 flex items-center gap-2">
-          <p className="text-xs font-semibold text-white truncate flex-1">{title}</p>
-          <button onClick={() => setPlaying(false)} className="text-[10px] text-slate-400 hover:text-white shrink-0">✕</button>
+        {/* Footer bar */}
+        <div className="bg-slate-900 px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white truncate">{title}</p>
+            <p className="text-[11px] text-slate-400">{channel}</p>
+          </div>
+          <a
+            href={youtubeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shrink-0"
+          >
+            <ExternalLink className="w-3 h-3" /> Open on YouTube
+          </a>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function VideoCard({ videoId, title, channel }: { videoId: string; title: string; channel: string }) {
+  const [open, setOpen] = useState(false);
+  const thumb = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   return (
-    <button
-      onClick={() => setPlaying(true)}
-      className="group w-full text-left rounded-2xl overflow-hidden border border-slate-200 hover:border-red-300 hover:shadow-md transition-all bg-white"
-    >
-      <div className="relative w-full bg-slate-900" style={{ paddingBottom: "56.25%" }}>
-        <img src={thumb} alt={title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-          <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-            <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+    <>
+      {/* Thumbnail card — always stays visible */}
+      <button
+        onClick={() => setOpen(true)}
+        className="group w-full text-left rounded-2xl overflow-hidden border border-slate-200 hover:border-red-300 hover:shadow-md transition-all bg-white"
+      >
+        <div className="relative w-full bg-slate-900" style={{ paddingBottom: "56.25%" }}>
+          <img
+            src={thumb}
+            alt={title}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="px-4 py-3">
-        <p className="text-sm font-semibold text-slate-800 leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">{title}</p>
-        <p className="text-[11px] text-slate-400 mt-1">{channel}</p>
-      </div>
-    </button>
+        <div className="px-4 py-3">
+          <p className="text-sm font-semibold text-slate-800 leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">{title}</p>
+          <p className="text-[11px] text-slate-400 mt-1">{channel}</p>
+        </div>
+      </button>
+
+      {/* Modal player — appears on top, thumbnail stays underneath */}
+      {open && (
+        <VideoPlayerModal
+          videoId={videoId}
+          title={title}
+          channel={channel}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -383,13 +439,15 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
 // ─── Notes content pane ─────────────────────────────────────────────────────────
 
 function NotesPane({
-  topicTitle, unitTitle, subjectName, subjectCode, cache,
+  topicTitle, unitTitle, subjectName, subjectCode, cache, cacheRef, fetchTopic,
 }: {
   topicTitle: string;
   unitTitle: string;
   subjectName: string;
   subjectCode: string;
   cache: TopicCache | undefined;
+  cacheRef: React.MutableRefObject<CacheMap>;
+  fetchTopic: (t: string, u: string) => void;
 }) {
   const state = cache?.status ?? "pending";
 
@@ -431,7 +489,16 @@ function NotesPane({
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-slate-400">
             <AlertCircle className="w-10 h-10 text-rose-300" />
             <p className="text-sm font-semibold text-slate-600">Failed to load notes</p>
-            <p className="text-xs text-slate-400">{cache?.error}</p>
+            <p className="text-xs text-slate-400 text-center max-w-xs">{cache?.error}</p>
+            <button
+              onClick={() => {
+                cacheRef.current.set(topicTitle, { status: "pending" });
+                fetchTopic(topicTitle, unitTitle);
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Try Again
+            </button>
           </div>
         )}
 
@@ -591,10 +658,10 @@ function SyllabusNotes() {
   const [, forceUpdate] = useState(0);
   const triggerRender = useCallback(() => forceUpdate(n => n + 1), []);
 
-  // Fetch notes for a single topic
-  const fetchTopic = useCallback(async (topicTitle: string, unitTitle: string) => {
+  // Fetch notes for a single topic — retries once with simpler request on malformed JSON
+  const fetchTopic = useCallback(async (topicTitle: string, unitTitle: string, attempt = 0) => {
     const existing = cacheRef.current.get(topicTitle);
-    if (existing && existing.status !== "pending") return; // already fetching/done
+    if (existing && existing.status !== "pending") return;
 
     cacheRef.current.set(topicTitle, { status: "loading" });
     triggerRender();
@@ -609,6 +676,12 @@ function SyllabusNotes() {
       });
       cacheRef.current.set(topicTitle, { status: "done", data: result });
     } catch (e: any) {
+      // Retry once if it's a malformed content error
+      if (attempt === 0 && e?.message?.includes("malformed")) {
+        cacheRef.current.set(topicTitle, { status: "pending" });
+        await new Promise(r => setTimeout(r, 2000));
+        return fetchTopic(topicTitle, unitTitle, 1);
+      }
       cacheRef.current.set(topicTitle, {
         status: "error",
         error: e?.message ?? "Failed to load notes.",
@@ -755,6 +828,8 @@ function SyllabusNotes() {
               subjectName={decodedName}
               subjectCode={code}
               cache={cacheRef.current.get(activeTopic.topicTitle)}
+              cacheRef={cacheRef}
+              fetchTopic={fetchTopic}
             />
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400 gap-4 p-8">
