@@ -835,8 +835,9 @@ class GenerateTopicNotesView(APIView):
         ai = AIService()
 
         def _repair_json(text: str):
-            """Robust JSON extraction: strip fences, try full parse, then find outermost {}."""
+            """Robust JSON extraction with aggressive truncation recovery."""
             cleaned = (text or '').strip()
+            # Strip markdown fences
             for prefix in ('```json', '```'):
                 if cleaned.startswith(prefix):
                     cleaned = cleaned[len(prefix):]
@@ -844,12 +845,14 @@ class GenerateTopicNotesView(APIView):
             if cleaned.endswith('```'):
                 cleaned = cleaned[:-3]
             cleaned = cleaned.strip()
+
             # Attempt 1: direct parse
             try:
                 return json.loads(cleaned)
             except Exception:
                 pass
-            # Attempt 2: outermost {...} block
+
+            # Attempt 2: find outermost { ... }
             start = cleaned.find('{')
             end = cleaned.rfind('}')
             if start != -1 and end != -1 and end > start:
@@ -857,51 +860,85 @@ class GenerateTopicNotesView(APIView):
                     return json.loads(cleaned[start:end + 1])
                 except Exception:
                     pass
-            # Attempt 3: trim after last complete page
-            snippet = cleaned[start:] if start != -1 else cleaned
-            for trail in ('}\n  ]\n}', '}\n]\n}', '}]}', '}\n]'):
-                idx = snippet.rfind(trail)
-                if idx != -1:
-                    candidate = snippet[:idx + len(trail)]
-                    if not candidate.endswith('}'):
-                        candidate += '}'
+
+            # Attempt 3: try closing truncated JSON aggressively
+            if start != -1:
+                snippet = cleaned[start:]
+                # Count open braces/brackets to figure out what's missing
+                opens = snippet.count('{') - snippet.count('}')
+                opens_arr = snippet.count('[') - snippet.count(']')
+                # Close any open strings first (remove trailing partial string)
+                # Find last complete block entry — look for last }, or }]
+                for trail in ['}\n    ]\n  }\n]', '}\n  ]\n}', '}\n]\n}', '}]}', '}]']:
+                    idx = snippet.rfind(trail)
+                    if idx != -1:
+                        candidate = snippet[:idx + len(trail)]
+                        # Close remaining open braces
+                        remaining_opens = candidate.count('{') - candidate.count('}')
+                        remaining_arr = candidate.count('[') - candidate.count(']')
+                        candidate += ']' * remaining_arr + '}' * remaining_opens
+                        try:
+                            return json.loads(candidate)
+                        except Exception:
+                            pass
+
+                # Last resort: try closing with right number of brackets
+                for close_str in [
+                    ']}]}',
+                    ']\n  }\n  ]\n}',
+                    ']}\n]\n}',
+                    ']\n}\n]\n}',
+                ]:
                     try:
-                        return json.loads(candidate)
+                        return json.loads(snippet + close_str)
                     except Exception:
                         pass
+
             raise ValueError('Could not parse valid JSON from AI response')
 
+        def _build_fallback(topic: str, subject: str, text: str) -> dict:
+            """Build a minimal valid notes structure from plain text when JSON fails."""
+            paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+            blocks = []
+            for p in paragraphs[:8]:
+                if p.startswith('- ') or p.startswith('• '):
+                    items = [{'text': line.lstrip('-• ').strip(), 'bold': False, 'sub': []}
+                             for line in p.split('\n') if line.strip()]
+                    blocks.append({'kind': 'bullets', 'items': items})
+                else:
+                    blocks.append({'kind': 'intro', 'text': p})
+
+            return {
+                'subject': subject,
+                'title': f'Study Guide: {topic}',
+                'summary': paragraphs[0] if paragraphs else f'Revision notes for {topic}.',
+                'pages': [{'section': 'Revision Notes', 'blocks': blocks or [{'kind': 'intro', 'text': text[:500]}]}]
+            }
+
+        # Compact prompt — 2 pages only, minimal example, very explicit JSON-only instruction
         PROMPT_TEMPLATE = (
-            "You are an expert IGCSE curriculum editor. Generate a comprehensive study guide for "
-            "the topic '{topic}' in '{subject}'.\n\n"
-            "STRICT REQUIREMENTS:\n"
-            "- Generate exactly 4 section pages (not 6 — exactly 4 to keep JSON valid)\n"
-            "- Each section has 4-5 blocks\n"
-            "- Use **bold** for key terms inside text fields\n"
-            "- Write equations/formulas as plain text WITHOUT dollar signs (write 'F = ma' not LaTeX)\n"
-            "- Include 1 image block per section with an educational diagram prompt\n"
-            "- CRITICAL: Return ONLY valid JSON. No markdown fences, no backticks, no extra text before or after.\n"
-            "- CRITICAL: Do NOT truncate. Complete ALL 4 pages fully before ending.\n\n"
-            "Return EXACTLY this JSON shape:\n"
-            "{{\n"
-            '  "subject": "{subject}",\n'
-            '  "title": "Study Guide: {topic}",\n'
-            '  "summary": "3-sentence overview of the topic",\n'
-            '  "pages": [\n'
-            "    {{\n"
-            '      "section": "Section Title",\n'
-            '      "blocks": [\n'
-            '        {{ "kind": "intro", "text": "Paragraph. Use **bold** for key terms." }},\n'
-            '        {{ "kind": "bullets", "items": [ {{ "text": "Point one", "bold": false, "sub": [] }}, {{ "text": "Point two", "bold": false, "sub": [] }} ] }},\n'
-            '        {{ "kind": "definition", "term": "Term", "definition": "Definition text here." }},\n'
-            '        {{ "kind": "table", "headers": ["Feature", "Description"], "rows": [["Row 1a","Row 1b"],["Row 2a","Row 2b"]] }},\n'
-            '        {{ "kind": "tip", "text": "Exam tip here." }},\n'
-            '        {{ "kind": "image", "prompt": "Educational diagram of [concept] for IGCSE, textbook style, labeled, white background", "caption": "Figure caption", "side": "full" }}\n'
-            "      ]\n"
-            "    }}\n"
-            "  ]\n"
-            "}}\n\n"
-            "Generate exactly 4 pages. Output raw JSON only — no markdown, no backticks, nothing before or after the JSON object."
+            "Generate IGCSE revision notes for '{topic}' in '{subject}'. "
+            "Output ONLY a JSON object — no text before or after, no markdown, no backticks.\n\n"
+            "JSON format:\n"
+            '{{"subject":"{subject}","title":"Notes: {topic}","summary":"Brief 2-sentence overview.",'
+            '"pages":['
+            '{{"section":"Key Concepts","blocks":['
+            '{{"kind":"intro","text":"Opening paragraph with **key terms** bolded."}},'
+            '{{"kind":"bullets","items":[{{"text":"Point 1","bold":false,"sub":[]}},{{"text":"Point 2","bold":false,"sub":[]}}]}},'
+            '{{"kind":"definition","term":"Term","definition":"Definition."}},'
+            '{{"kind":"tip","text":"Exam tip."}},'
+            '{{"kind":"image","prompt":"Educational diagram of {topic} IGCSE labeled white background","caption":"Diagram: {topic}","side":"full"}}'
+            ']}},'
+            '{{"section":"Key Facts & Applications","blocks":['
+            '{{"kind":"intro","text":"Second section paragraph."}},'
+            '{{"kind":"table","headers":["Item","Detail"],"rows":[["A","B"],["C","D"]]}},'
+            '{{"kind":"bullets","items":[{{"text":"Fact 1","bold":false,"sub":[]}},{{"text":"Fact 2","bold":false,"sub":[]}}]}},'
+            '{{"kind":"tip","text":"Second exam tip."}},'
+            '{{"kind":"image","prompt":"Second educational diagram of {topic}","caption":"Diagram 2","side":"full"}}'
+            ']}}'
+            ']}}'
+            '\n\nNow write the real notes following this EXACT structure for {topic} in {subject}. '
+            'Return only the JSON — start with {{ and end with }}.'
         )
 
         prompt = PROMPT_TEMPLATE.format(topic=topic, subject=subject or topic)
@@ -909,8 +946,8 @@ class GenerateTopicNotesView(APIView):
         try:
             response_text = async_to_sync(ai.chat)(
                 [{'role': 'user', 'content': prompt}],
-                max_tokens=12000,
-                timeout=90,
+                max_tokens=6000,
+                timeout=60,
             )
 
             if isinstance(response_text, str) and (
@@ -918,13 +955,24 @@ class GenerateTopicNotesView(APIView):
                 or 'API Key missing' in response_text
             ):
                 return Response(
-                    {'error': 'AI is not configured. Set at least one provider key (GROQ_API_KEY, GOOGLE_STUDIO_API_KEY, or OPENROUTER_API_KEY).'},
+                    {'error': 'AI is not configured.'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-            note_data = _repair_json(response_text)
+            # Try JSON repair first
+            try:
+                note_data = _repair_json(response_text)
+            except ValueError:
+                # Fall back to plain-text notes structure
+                note_data = _build_fallback(topic, subject or topic, response_text)
+
+            # Ensure pages exist
+            if not note_data.get('pages'):
+                note_data['pages'] = [{'section': 'Notes', 'blocks': [{'kind': 'intro', 'text': response_text[:800]}]}]
 
             # Ensure every section page has at least one image block
+            import urllib.parse
+            import random
             for page in note_data.get('pages', []):
                 blocks = page.get('blocks', []) or []
                 has_image = any(b.get('kind') == 'image' for b in blocks)
@@ -932,34 +980,21 @@ class GenerateTopicNotesView(APIView):
                     section_title = page.get('section') or 'Diagram'
                     page.setdefault('blocks', []).append({
                         'kind': 'image',
-                        'prompt': (
-                            f"Simple flat 2D educational diagram for IGCSE '{topic}' showing '{section_title}'. "
-                            f"White background, labeled arrows, textbook style, minimal, no shading."
-                        ),
+                        'prompt': f"Educational diagram for IGCSE '{topic}' — {section_title}, white background, labeled, textbook style.",
                         'caption': f'Diagram: {section_title}',
                         'side': 'full',
                     })
 
-            # Resolve image blocks instantly using Pollinations.ai generative URLs (browser loads on-demand)
-            import urllib.parse
-            import random
+            # Resolve image src URLs via Pollinations.ai
             for page in note_data.get('pages', []):
                 for block in page.get('blocks', []):
                     if block.get('kind') == 'image' and block.get('prompt') and not block.get('src'):
-                        img_prompt = block['prompt']
-                        style_suffix = "simple flat 2D educational diagram, white background, labeled, textbook style, minimal, no shading"
-                        full_img_prompt = f"{img_prompt}. {style_suffix}."
-                        encoded_prompt = urllib.parse.quote(full_img_prompt)
-                        block['src'] = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=600&nologo=true&seed={random.randint(1, 99999)}"
+                        full_prompt = f"{block['prompt']}. Simple flat 2D, white background, labeled, textbook style."
+                        encoded = urllib.parse.quote(full_prompt)
+                        block['src'] = f"https://image.pollinations.ai/prompt/{encoded}?width=800&height=600&nologo=true&seed={random.randint(1, 99999)}"
 
             return Response(note_data)
 
-        except ValueError:
-            logger.exception('JSON repair failed for AI notes')
-            return Response(
-                {'error': 'Failed to generate notes: AI returned malformed content. Please try again.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
         except Exception as e:
             logger.exception('Failed to generate AI notes')
             return Response({'error': f'Failed to generate notes: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
