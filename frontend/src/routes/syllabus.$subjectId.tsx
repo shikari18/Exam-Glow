@@ -328,13 +328,15 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col" onClick={toggleControls}>
-      {/* Controls overlay */}
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col">
+      {/* Controls overlay — tap the header bar area to toggle */}
       <div
         className={`absolute inset-x-0 top-0 z-10 flex flex-col transition-all duration-300 ${controlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-        onClick={e => e.stopPropagation()}
       >
-        <div className="bg-black/80 backdrop-blur-md px-4 pt-safe-top py-3 flex items-center gap-3">
+        <div
+          className="bg-black/80 backdrop-blur-md px-4 pt-safe-top py-3 flex items-center gap-3 cursor-pointer"
+          onClick={toggleControls}
+        >
           <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
             <FileText className="w-4 h-4 text-red-400" />
           </div>
@@ -342,7 +344,7 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
             <p className="font-bold text-sm text-white truncate">{subjectName} ({subjectCode}) — Syllabus</p>
             <p className="text-[11px] text-white/50">{yearRange} · Official Cambridge PDF</p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
             <button
               onClick={onOpenAITeach}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-violet-600 to-purple-500 text-white hover:opacity-90 transition-all mr-1"
@@ -357,7 +359,6 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
               rel="noopener noreferrer"
               className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white"
               title="Open in new tab"
-              onClick={e => e.stopPropagation()}
             >
               <ExternalLink className="w-4 h-4" />
             </a>
@@ -371,6 +372,15 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
         </div>
       </div>
 
+      {/* Show-controls tap strip — visible when controls are hidden */}
+      {!controlsVisible && (
+        <button
+          onClick={toggleControls}
+          className="absolute top-0 inset-x-0 h-10 z-10 bg-transparent"
+          aria-label="Show controls"
+        />
+      )}
+
       {/* Loading state */}
       {loading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 z-5">
@@ -382,11 +392,10 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
         </div>
       )}
 
-      {/* PDF iframe — wrapped for mobile scroll support */}
+      {/* PDF iframe — full size, no click intercept so touch scroll works freely */}
       <div
         className="flex-1 overflow-auto"
         style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-        onClick={e => e.stopPropagation()}
       >
         <iframe
           src={resolvedUrl}
@@ -399,7 +408,7 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
       {/* Tap hint */}
       {!loading && controlsVisible && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white/60 text-[10px] px-3 py-1 rounded-full pointer-events-none">
-          Tap to hide controls
+          Tap header to hide controls
         </div>
       )}
     </div>
