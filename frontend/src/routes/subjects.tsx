@@ -180,6 +180,7 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
   // PDF state
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Pre-check: hit the endpoint with a HEAD-style fetch to catch 404 before iframe
   useEffect(() => {
@@ -439,8 +440,8 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
           </div>
         ) : (
           <iframe
-            key={pdfUrl}
-            src={pdfUrl}
+            key={`${pdfUrl}#page=${currentPage}`}
+            src={currentPage > 1 ? `${pdfUrl}#page=${currentPage}` : pdfUrl}
             className="w-full h-full border-0 block"
             title={`${subject.subjectName} Syllabus`}
             onLoad={(e) => {
@@ -458,6 +459,28 @@ function SyllabusInlineViewer({ subject, onClose }: { subject: SyllabusViewerSta
             onError={() => { setPdfLoading(false); setPdfError(true); }}
           />
         )}
+
+        {/* Left Floating Page Turn Button */}
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className="fixed left-4 top-1/2 -translate-y-1/2 z-[240] w-12 h-12 rounded-full bg-slate-900/70 hover:bg-slate-900/90 text-white flex items-center justify-center border border-slate-700/50 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
+            title="Previous Page"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* Right Floating Page Turn Button */}
+        <button
+          onClick={() => setCurrentPage((p) => p + 1)}
+          className={`fixed top-1/2 -translate-y-1/2 z-[240] w-12 h-12 rounded-full bg-slate-900/70 hover:bg-slate-900/90 text-white flex items-center justify-center border border-slate-700/50 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+            botOpen ? "right-[24rem]" : "right-4"
+          }`}
+          title="Next Page"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
       </div>
 
       {/* ── ✋ Interrupt button (only while teaching) ── */}

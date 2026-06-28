@@ -298,6 +298,7 @@ interface SyllabusRealPDFViewerProps {
 function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, onClose, onOpenAITeach }: SyllabusRealPDFViewerProps) {
   const [loading, setLoading] = useState(true);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // pdfUrl is now the backend stream endpoint directly — no double-proxy needed.
   // If it's already our backend URL, use it as-is; otherwise wrap through proxy.
@@ -398,12 +399,33 @@ function SyllabusRealPDFViewer({ subjectName, subjectCode, yearRange, pdfUrl, on
         style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
       >
         <iframe
-          src={resolvedUrl}
+          key={`${resolvedUrl}#page=${currentPage}`}
+          src={currentPage > 1 ? `${resolvedUrl}#page=${currentPage}` : resolvedUrl}
           className="w-full h-full border-0 block min-h-[100%]"
           title={`${subjectName} ${yearRange} Syllabus PDF`}
           onLoad={() => setLoading(false)}
         />
       </div>
+
+      {/* Left Floating Page Turn Button */}
+      {currentPage > 1 && (
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          className="fixed left-4 top-1/2 -translate-y-1/2 z-[240] w-12 h-12 rounded-full bg-slate-900/70 hover:bg-slate-900/90 text-white flex items-center justify-center border border-slate-700/50 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
+          title="Previous Page"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Right Floating Page Turn Button */}
+      <button
+        onClick={() => setCurrentPage((p) => p + 1)}
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-[240] w-12 h-12 rounded-full bg-slate-900/70 hover:bg-slate-900/90 text-white flex items-center justify-center border border-slate-700/50 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
+        title="Next Page"
+      >
+        <ChevronRight className="w-6 h-6" />
+      </button>
 
       {/* Tap hint */}
       {!loading && controlsVisible && (

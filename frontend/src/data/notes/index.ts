@@ -337,6 +337,31 @@ export function getDefaultSubjectWithCode(subjectName: string): string {
   return subjectName; // fallback
 }
 
+function ensurePageImages(chapters: NoteChapter[]): NoteChapter[] {
+  return chapters.map(chap => ({
+    ...chap,
+    pages: chap.pages.map(page => {
+      if (!page.blocks.some(b => b.kind === "image")) {
+        const newBlocks = [...page.blocks];
+        const introIdx = newBlocks.findIndex(b => b.kind === "intro");
+        const insertIndex = introIdx !== -1 ? introIdx + 1 : 0;
+        
+        const cleanSection = page.section.replace(/^\d+(\.\d+)*\s*/, "");
+        const diagramPrompt = `clear educational diagram or infographic: ${cleanSection} for IGCSE student revision, clean vector art style, labels, high resolution`;
+        
+        newBlocks.splice(insertIndex, 0, {
+          kind: "image",
+          src: `https://image.pollinations.ai/prompt/${encodeURIComponent(diagramPrompt)}?width=640&height=400&nologo=true`,
+          caption: `Educational diagram illustrating key concepts of ${cleanSection}.`,
+          side: "full"
+        });
+        return { ...page, blocks: newBlocks };
+      }
+      return page;
+    })
+  }));
+}
+
 export function getChaptersForSubject(subject: string): NoteChapter[] {
   const { baseSubject, code, fullName } = parseSubjectParam(subject);
   const mappedCode = SYLLABUS_CODE_MAP[code] || code;
@@ -369,7 +394,7 @@ export function getChaptersForSubject(subject: string): NoteChapter[] {
   }
 
   if (staticChapters.length > 0) {
-    return staticChapters.map(chap => {
+    const res = staticChapters.map(chap => {
       // Helper to replace syllabus code in text blocks
       const customizedPages = chap.pages.map(page => {
         const customizedBlocks = page.blocks.map(block => {
@@ -392,6 +417,7 @@ export function getChaptersForSubject(subject: string): NoteChapter[] {
         pages: customizedPages
       };
     });
+    return ensurePageImages(res);
   }
 
   // 2. Load dynamic chapters from syllabus objectives
@@ -418,14 +444,10 @@ export function getChaptersForSubject(subject: string): NoteChapter[] {
     };
   });
   
-  return dynamicChapters;
+  return ensurePageImages(dynamicChapters);
 }
 
 export function getChapter(subject: string, title: string): NoteChapter | undefined {
-  const { fullName } = parseSubjectParam(subject);
-  const staticChapter = noteChapters.find((c) => c.subject === fullName && c.title === title);
-  if (staticChapter) return staticChapter;
-  
   const chapters = getChaptersForSubject(subject);
   return chapters.find((c) => c.title === title);
 }

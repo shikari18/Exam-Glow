@@ -211,7 +211,7 @@ export const accountingNotes: NoteChapter[] = [
         "blocks": [
           {
             "kind": "video",
-            "youtubeId": "FZdDKhOp6j8",
+            "youtubeId": "kYv9qQZ29s8",
             "title": "Sources and Recording of Data \u2014 IGCSE Accounting Lesson",
             "caption": "Comprehensive video tutorial covering the core concepts of Sources and Recording of Data"
           },
