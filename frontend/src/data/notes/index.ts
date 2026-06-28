@@ -191,6 +191,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     if (t.includes("binary") || t.includes("hexadecimal") || t.includes("number system") || t.includes("data representation")) {
       return [
         { kind: "video", youtubeId: "r1WV68nraoc", title: "Number Systems (Binary & Hex) — IGCSE Computer Science", caption: "Conversion between denary, binary and hexadecimal with worked examples" },
+        { kind: "image", src: `https://image.pollinations.ai/prompt/${encodeURIComponent("binary and hexadecimal conversion table simple minimal block diagram")}?width=640&height=400&nologo=true`, caption: "Conversion reference table: Binary, Hexadecimal, and Denary equivalents." },
         { kind: "intro", text: `**${title}** — ${desc}. Covers binary, hexadecimal and denary conversions for Cambridge IGCSE Computer Science (0478).` },
         { kind: "keyterms", terms: [
           { label: "Denary (Base-10)", value: "Standard decimal system using digits 0–9." },
@@ -205,6 +206,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     if (t.includes("cpu") || t.includes("architecture") || t.includes("hardware") || t.includes("memory")) {
       return [
         { kind: "video", youtubeId: "TIHW5hEoaAw", title: "CPU Architecture & Fetch-Decode-Execute — IGCSE CS", caption: "Covers CPU components, registers and the FDE cycle with diagrams" },
+        { kind: "image", src: `https://image.pollinations.ai/prompt/${encodeURIComponent("CPU fetch decode execute cycle block diagram CPU architecture")}?width=640&height=400&nologo=true`, caption: "Simple block diagram of CPU components and register paths in the FDE cycle." },
         { kind: "intro", text: `**${title}** — ${desc}. This note covers CPU architecture and memory for Cambridge IGCSE Computer Science (0478).` },
         { kind: "keyterms", terms: [
           { label: "ALU", value: "Arithmetic Logic Unit — performs calculations and logical comparisons." },
@@ -220,6 +222,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     if (t.includes("algorithm") || t.includes("pseudocode") || t.includes("flowchart") || t.includes("problem-solving")) {
       return [
         { kind: "video", youtubeId: "7v2gs8rdQzU", title: "Algorithms & Pseudocode — IGCSE Computer Science", caption: "Covers decomposition, abstraction, trace tables, searching and sorting" },
+        { kind: "image", src: `https://image.pollinations.ai/prompt/${encodeURIComponent("flowchart symbols diagram start process decision input output simple minimal")}?width=640&height=400&nologo=true`, caption: "Standard flowchart symbol definitions for algorithm planning." },
         { kind: "intro", text: `**${title}** — ${desc}. Covers algorithmic thinking for Cambridge IGCSE Computer Science (0478).` },
         { kind: "keyterms", terms: [
           { label: "Algorithm", value: "A step-by-step set of instructions to solve a problem." },
@@ -234,6 +237,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     if (t.includes("database") || t.includes("sql") || t.includes("query")) {
       return [
         { kind: "video", youtubeId: "5I_1jRGSR9E", title: "Databases & SQL — IGCSE Computer Science", caption: "Covers database concepts, primary/foreign keys, and SQL SELECT queries" },
+        { kind: "image", src: `https://image.pollinations.ai/prompt/${encodeURIComponent("relational database table primary key foreign key connection schema")}?width=640&height=400&nologo=true`, caption: "Database table relationship showing Primary Key and Foreign Key links." },
         { kind: "intro", text: `**${title}** — ${desc}. This note covers database design and SQL for Cambridge IGCSE Computer Science (0478).` },
         { kind: "keyterms", terms: [
           { label: "Primary Key", value: "A field that uniquely identifies each record in a table. Cannot be NULL or duplicate." },
@@ -247,6 +251,7 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
     // CS fallback
     return [
       { kind: "video", youtubeId: "r1WV68nraoc", title: `${title} — IGCSE Computer Science`, caption: "Waves and physics — Cognito GCSE (general science revision)" },
+      { kind: "image", src: `https://image.pollinations.ai/prompt/${encodeURIComponent("computer science network coding simple diagram " + title)}?width=640&height=400&nologo=true`, caption: `Concept diagram for ${title}` },
       { kind: "intro", text: `**${title}** — ${desc}.` },
       { kind: "keyterms", terms: [
         { label: "Data", value: "Raw facts and figures without context." },
@@ -260,6 +265,8 @@ function getDynamicBlocks(title: string, desc: string, code: string, subject: st
   // ── DEFAULT FALLBACK ─────────────────────────────────────────────────────────
   const words = title.split(" ").slice(0, 3);
   return [
+    { kind: "video", youtubeId: "VhwZ9t2b3Zk", title: `Cambridge IGCSE ${subject} Guide — ${title}`, caption: "Overview of key syllabus topics, common pitfalls and exam paper tips." },
+    { kind: "image", src: `https://image.pollinations.ai/prompt/${encodeURIComponent("simple educational drawing diagram: " + title + " for IGCSE " + subject + " students, basic clean lines")}?width=640&height=400&nologo=true`, caption: `Visual illustration representing ${title} under the IGCSE ${subject} curriculum.` },
     { kind: "intro", text: `**${title}** — ${desc}. This structured guide covers the essential concepts, definitions and exam techniques for Cambridge IGCSE ${subject}.` },
     { kind: "keyterms", terms: [
       { label: words[0] || "Concept", value: `Core definition relating to ${title} under the IGCSE ${subject} curriculum.` },
@@ -279,6 +286,19 @@ const subjectAliasMap: Record<string, string> = {
   "english literature": "English Language",
   "english language": "English Language",
   "additional mathematics": "Mathematics",
+};
+
+const SYLLABUS_CODE_MAP: Record<string, string> = {
+  "0970": "0610",
+  "0971": "0620",
+  "0972": "0625",
+  "0980": "0580",
+  "0984": "0478",
+  "0985": "0452",
+  "0987": "0455",
+  "0986": "0450",
+  "0977": "0470",
+  "0990": "0500",
 };
 
 export function parseSubjectParam(subjectParam: string) {
@@ -319,23 +339,19 @@ export function getDefaultSubjectWithCode(subjectName: string): string {
 
 export function getChaptersForSubject(subject: string): NoteChapter[] {
   const { baseSubject, code, fullName } = parseSubjectParam(subject);
+  const mappedCode = SYLLABUS_CODE_MAP[code] || code;
 
   // 1. Try static chapters for the base subject
   // When a code is provided (e.g. "0452"), only match static chapters that either:
   //   a) have no code set (legacy — compatible with any syllabus code of that subject), OR
   //   b) have a matching code (future: per-syllabus-code chapters)
   // When a different code is provided for the same subject name (e.g. "0985"),
-  //   static chapters without a code are NOT returned → falls through to dynamic generation.
-  //
-  // Current behaviour (all static chapters have no code set):
-  //   "Accounting - 0452" → returns accountingNotes (no code mismatch)
-  //   "Accounting - 0985" → returns accountingNotes (no code mismatch, same base subject)
-  // To isolate notes per code in future, add `code: "0452"` to accountingNotes chapters.
+  //   we map it to the standard code so it doesn't fall through.
   let staticChapters = noteChapters.filter((c) => {
     const subjectMatch = c.subject === baseSubject;
     if (!subjectMatch) return false;
-    // If the chapter has an explicit code, it must match the requested code
-    if (c.code && code && c.code !== code) return false;
+    // If the chapter has an explicit code, it must match the mapped code
+    if (c.code && mappedCode && c.code !== mappedCode) return false;
     return true;
   });
   
@@ -346,7 +362,7 @@ export function getChaptersForSubject(subject: string): NoteChapter[] {
       staticChapters = noteChapters.filter((c) => {
         const subjectMatch = c.subject === alias;
         if (!subjectMatch) return false;
-        if (c.code && code && c.code !== code) return false;
+        if (c.code && mappedCode && c.code !== mappedCode) return false;
         return true;
       });
     }

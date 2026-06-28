@@ -1779,21 +1779,33 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
     try {
       // In Q&A mode Dr. Smith answers in character; otherwise general tutor
       const systemPrompt = qaMode
-        ? `You are Dr. Marcus Smith, a bright, cheery, and highly encouraging IGCSE professor who just finished teaching the entire ${cleanName} (code ${subjectCode}) syllabus. Never mention Gemini, Google, or any AI model names. The student is asking a follow-up question. Answer in character as Dr. Smith — warm, enthusiastic, friendly, and thorough. ${wantsLong ? "Give a detailed explanation." : "Keep your answer clear and concise, 2-5 sentences."}  Plain text only.`
-        : `You are a cheery, friendly, and concise IGCSE tutor specialising in ${cleanName} (code ${subjectCode}), currently on Page ${currentPage} (${getPageTitle(currentPage)}). Never mention Gemini, Google, or any AI model names. Be warm and encouraging in your explanation. ${wantsLong ? "Give a thorough, detailed explanation." : "Keep your answer short — 2-4 sentences."}  Plain text only.`;
+        ? `You are Dr. Marcus Smith, a bright, cheery, and highly encouraging IGCSE professor who just finished teaching the entire ${cleanName} (code ${subjectCode}) syllabus. Never mention Gemini, Google, or any AI model names. The student is asking a follow-up question. Answer in character as Dr. Smith — warm, enthusiastic, friendly, and thorough. ${wantsLong ? "Give a detailed explanation." : "Keep your answer clear and concise, 2-5 sentences."} Plain text only.
+PAGE TURNING: You have control over the syllabus document pages. If the user asks to turn/go to a page, go back, go forward, or if you decide to change the page to show relevant content, append '[PAGE: X]' at the very end of your response where X is the page number (1 to ${totalPages}).`
+        : `You are a cheery, friendly, and concise IGCSE tutor specialising in ${cleanName} (code ${subjectCode}), currently on Page ${currentPage} (${getPageTitle(currentPage)}). Never mention Gemini, Google, or any AI model names. Be warm and encouraging in your explanation. ${wantsLong ? "Give a thorough, detailed explanation." : "Keep your answer short — 2-4 sentences."} Plain text only.
+PAGE TURNING: You have control over the syllabus document pages. If the user asks to turn/go to a page, go back, go forward, or if you finish explaining the current page and want to move to another page, append '[PAGE: X]' at the very end of your response where X is the page number (1 to ${totalPages}).`;
 
       const answer = await groqAsk(systemPrompt, userMsg, { max_tokens: maxTok, temperature: 0.65, signal: controller.signal });
 
       if (controller.signal.aborted) return;
       chatAbortRef.current = null;
 
+      let cleanAnswer = answer;
+      const pageMatch = answer.match(/\[PAGE:\s*(\d+)\]/i);
+      if (pageMatch) {
+        const targetPage = parseInt(pageMatch[1], 10);
+        if (targetPage >= 1 && targetPage <= totalPages) {
+          setCurrentPage(targetPage);
+        }
+        cleanAnswer = answer.replace(/\[PAGE:\s*\d+\]/gi, "").trim();
+      }
+
       // In Q&A mode, show answer as Dr. Smith
       if (qaMode) {
-        setMessages(prev => [...prev, { role: "smith", text: answer, speaker: "Dr. Marcus Smith" }]);
+        setMessages(prev => [...prev, { role: "smith", text: cleanAnswer, speaker: "Dr. Marcus Smith" }]);
         // Speak the answer aloud as Dr. Smith (male voice)
-        speakSingleTurn(answer, "male", () => {}, () => {});
+        speakSingleTurn(cleanAnswer, "male", () => {}, () => {});
       } else {
-        setMessages(prev => [...prev, { role: "assistant", text: answer }]);
+        setMessages(prev => [...prev, { role: "assistant", text: cleanAnswer }]);
       }
       setIsTyping(false);
     } catch (err) {
@@ -2293,6 +2305,30 @@ Give a complete, long, detailed lesson covering every single concept, term, aim,
             </>
           </div>
         </div>
+
+        {/* Left Floating Page Turn Button */}
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className="fixed left-4 lg:left-8 top-1/2 -translate-y-1/2 z-[240] w-12 h-12 rounded-full bg-slate-900/70 hover:bg-slate-900/90 text-white flex items-center justify-center border border-slate-700/50 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
+            title="Previous Page"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* Right Floating Page Turn Button */}
+        {currentPage < totalPages && (
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={`fixed top-1/2 -translate-y-1/2 z-[240] w-12 h-12 rounded-full bg-slate-900/70 hover:bg-slate-900/90 text-white flex items-center justify-center border border-slate-700/50 shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+              aiChatOpen ? "right-4 lg:right-[416px]" : "right-4 lg:right-8"
+            }`}
+            title="Next Page"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
       </div>
     </div>
 

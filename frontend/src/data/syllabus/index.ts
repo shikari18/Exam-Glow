@@ -166,9 +166,47 @@ function getFallbackObjectives(subjectId: string, name: string): SyllabusObjecti
   }
 }
 
+const SYLLABUS_CODE_MAP: Record<string, string> = {
+  "0970": "0610",
+  "0971": "0620",
+  "0972": "0625",
+  "0980": "0580",
+  "0984": "0478",
+  "0985": "0452",
+  "0987": "0455",
+  "0986": "0450",
+  "0977": "0470",
+  "0990": "0500",
+};
+
+export function getStandardSubjectId(subjectId: string): string {
+  const parts = subjectId.split("-");
+  const code = parts[parts.length - 1];
+  const mappedCode = SYLLABUS_CODE_MAP[code];
+  if (mappedCode) {
+    return [...parts.slice(0, -1), mappedCode].join("-");
+  }
+  return subjectId;
+}
+
 export function getSyllabusData(subjectId: string): SyllabusData | undefined {
-  const staticSyllabus = syllabusData[subjectId];
-  if (staticSyllabus) return staticSyllabus;
+  const standardId = getStandardSubjectId(subjectId);
+  const staticSyllabus = syllabusData[standardId];
+  if (staticSyllabus) {
+    if (standardId !== subjectId) {
+      const { name, code, displayName } = parseSubjectId(subjectId);
+      return {
+        ...staticSyllabus,
+        subject: {
+          ...staticSyllabus.subject,
+          id: subjectId,
+          code,
+          displayName
+        }
+      };
+    }
+    return staticSyllabus;
+  }
   
   try {
     const { name, code, displayName } = parseSubjectId(subjectId);

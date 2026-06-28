@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getSyllabusData } from "@/data/syllabus";
-import { getChaptersForSubject, getDynamicChapter } from "@/data/notes/index";
+import { getChaptersForSubject } from "@/data/notes/index";
 import type { NoteBlock, NotePage, BulletItem } from "@/data/notes/index";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -129,63 +129,90 @@ function VideoCard({ videoId, title, caption }: { videoId: string; title: string
 function BlockRenderer({ block }: { block: NoteBlock }) {
   switch (block.kind) {
     case "intro":
-      return <div className="my-3">{parseMarkdownContent(block.text)}</div>;
+      return <p className="text-[15px] text-slate-700 leading-7 my-3">{parseInlineText(block.text)}</p>;
 
     case "definition":
       return (
-        <div className="my-4 border-l-4 border-primary/40 bg-primary/5 pl-4 pr-4 py-3 rounded-r-lg">
-          <p className="text-[10px] font-semibold text-primary/70 uppercase tracking-wider mb-1">Definition</p>
-          <p className="text-sm font-semibold text-slate-900 mb-0.5">{parseInlineText(block.term)}</p>
-          <p className="text-sm text-slate-600 leading-relaxed">{parseInlineText(block.definition)}</p>
+        <div className="my-5 pl-4 border-l-2 border-slate-300">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Definition</p>
+          <p className="text-sm font-semibold text-slate-900">{parseInlineText(block.term)}</p>
+          <p className="text-sm text-slate-600 leading-relaxed mt-1">{parseInlineText(block.definition)}</p>
         </div>
       );
 
     case "keyterms":
       return (
-        <div className="my-4 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Key Terms</p>
-          {block.terms.map((t, i) => (
-            <div key={i} className="flex gap-2 text-sm">
-              <span className="font-semibold text-primary shrink-0">• {t.label}:</span>
-              <span className="text-slate-700 leading-relaxed">{parseInlineText(t.value)}</span>
-            </div>
-          ))}
+        <div className="my-5">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Key Terms</p>
+          <div className="space-y-3">
+            {block.terms.map((t, i) => (
+              <div key={i} className="flex gap-3 text-sm">
+                <span className="font-semibold text-slate-800 shrink-0 min-w-32">{t.label}</span>
+                <span className="text-slate-600 leading-relaxed">{parseInlineText(t.value)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       );
 
     case "bullets":
-      return <BulletList items={block.items} />;
+      return (
+        <ul className="my-4 space-y-2.5 pl-1">
+          {block.items.map((item, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="mt-2.5 w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 flex-none" />
+              <span className="text-[15px] text-slate-700 leading-7">
+                {parseInlineText(item.text)}
+                {item.sub && item.sub.length > 0 && (
+                  <ul className="mt-2 space-y-2 pl-4">
+                    {item.sub.map((s, j) => (
+                      <li key={j} className="flex items-start gap-2.5 text-sm text-slate-600">
+                        <span className="mt-2 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                        <span className="leading-6">{parseInlineText(s)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      );
 
     case "numbered":
       return (
-        <ol className="my-3 space-y-1.5 list-decimal list-inside pl-1">
+        <ol className="my-4 space-y-2 list-decimal pl-5">
           {block.items.map((item, i) => (
-            <li key={i} className="text-sm text-slate-700 leading-relaxed">{parseInlineText(item)}</li>
+            <li key={i} className="text-[15px] text-slate-700 leading-7 pl-1">{parseInlineText(item)}</li>
           ))}
         </ol>
       );
 
     case "equation":
       return (
-        <div className="my-4 bg-violet-50 border border-violet-200 rounded-lg p-4 text-center">
-          <p className="text-[10px] text-violet-600 font-semibold uppercase tracking-wider mb-2">{block.label}</p>
-          <p className="font-mono text-base font-bold text-violet-900 my-1 inline-block px-4 py-1.5 rounded-lg bg-white border border-violet-100">{block.formula}</p>
+        <div className="my-5 bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-slate-500 mb-2">{block.label}</p>
+          <p className="font-mono text-base font-bold text-slate-900">{block.formula}</p>
           {block.note && <p className="text-xs text-slate-500 mt-2">{parseInlineText(block.note)}</p>}
         </div>
       );
 
     case "table":
       return (
-        <div className="my-4 overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>{block.headers.map((h, i) => <th key={i} className="px-4 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">{h}</th>)}</tr>
+        <div className="my-5 overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b-2 border-slate-200">
+                {block.headers.map((h, i) => (
+                  <th key={i} className="py-2.5 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody>
               {block.rows.map((row, ri) => (
-                <tr key={ri} className="hover:bg-slate-50/60">
+                <tr key={ri} className="border-b border-slate-100">
                   {row.map((cell, ci) => (
-                    <td key={ci} className={`px-4 py-2.5 text-sm ${ci === 0 ? "font-medium text-slate-800" : "text-slate-600"}`}>
+                    <td key={ci} className={`py-2.5 px-4 text-sm ${ci === 0 ? "font-medium text-slate-800" : "text-slate-600"}`}>
                       {parseInlineText(cell)}
                     </td>
                   ))}
@@ -201,75 +228,59 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
 
     case "image":
       return block.src ? (
-        <figure className="my-4 rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
-          <img src={block.src} alt={block.caption ?? "Diagram"} className="w-full object-contain max-h-72" />
-          {block.caption && <figcaption className="text-center text-xs text-slate-500 italic py-2 px-4 bg-white border-t border-slate-100">{block.caption}</figcaption>}
+        <figure className="my-5">
+          <img src={block.src} alt={block.caption ?? "Diagram"} className="w-full rounded-lg border border-slate-100 object-contain max-h-72" />
+          {block.caption && <figcaption className="text-center text-xs text-slate-400 mt-2 italic">{block.caption}</figcaption>}
         </figure>
       ) : null;
 
     case "tip":
       return (
-        <div className="my-4 flex gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="my-5 flex gap-3 border-l-2 border-amber-400 pl-4 py-1">
           <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider mb-1">Exam Tip</p>
-            <div className="text-sm text-amber-900 leading-relaxed">{parseMarkdownContent(block.text)}</div>
+            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-1">Exam Tip</p>
+            <p className="text-sm text-slate-700 leading-relaxed">{parseInlineText(block.text)}</p>
           </div>
         </div>
       );
 
     case "warning":
       return (
-        <div className="my-4 flex gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="my-5 flex gap-3 border-l-2 border-red-400 pl-4 py-1">
           <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wider mb-1">Common Mistake</p>
-            <div className="text-sm text-red-900 leading-relaxed">{parseMarkdownContent(block.text)}</div>
+            <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wider mb-1">Common Mistake</p>
+            <p className="text-sm text-slate-700 leading-relaxed">{parseInlineText(block.text)}</p>
           </div>
         </div>
       );
 
     case "comparison":
       return (
-        <div className="my-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">{block.left.label}</p>
-            <ul className="space-y-1.5">
-              {block.left.items.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-blue-900">
-                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                  <span>{parseInlineText(item)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-            <p className="text-xs font-bold text-pink-700 mb-2 uppercase tracking-wide">{block.right.label}</p>
-            <ul className="space-y-1.5">
-              {block.right.items.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-pink-900">
-                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-pink-400 shrink-0" />
-                  <span>{parseInlineText(item)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="my-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[{ data: block.left, cls: "border-slate-200" }, { data: block.right, cls: "border-slate-200" }].map(({ data, cls }, idx) => (
+            <div key={idx} className={`border ${cls} rounded-lg p-4`}>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">{data.label}</p>
+              <ul className="space-y-1.5">
+                {data.items.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                    <span>{parseInlineText(item)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       );
 
-    case "highlight": {
-      const cls: Record<string, string> = {
-        pink: "bg-primary/5 border-primary/20 text-slate-800",
-        blue: "bg-blue-50 border-blue-200 text-blue-900",
-        green: "bg-emerald-50 border-emerald-200 text-emerald-900",
-        yellow: "bg-amber-50 border-amber-200 text-amber-900",
-      };
+    case "highlight":
       return (
-        <div className={`my-4 border rounded-lg px-4 py-3 text-sm leading-relaxed ${cls[block.color ?? "pink"]}`}>
+        <div className="my-5 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-700 leading-relaxed">
           {parseMarkdownContent(block.text)}
         </div>
       );
-    }
 
     default:
       return null;
@@ -385,9 +396,8 @@ function SyllabusNotes() {
   // Sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(() => {
-    const s = new Set<string>();
-    if (objectives.length > 0) s.add(objectives[0].id);
-    return s;
+    // Default: expand first chapter
+    return new Set(["ch-0"]);
   });
 
   // Active topic — default to first page of first chapter

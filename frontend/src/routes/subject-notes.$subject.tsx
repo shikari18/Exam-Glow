@@ -118,7 +118,7 @@ function parseInlineText(text: string) {
       return <strong key={i} className="font-extrabold text-foreground" style={{ fontWeight: 850 }}>{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith("==") && part.endsWith("==")) {
-      return <mark key={i} className="bg-primary/20 text-primary px-0.5 rounded not-italic font-medium">{part.slice(2, -2)}</mark>;
+      return <mark key={i} className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded not-italic font-medium border border-slate-200/50">{part.slice(2, -2)}</mark>;
     }
     if (part.startsWith("*") && part.endsWith("*")) {
       return <em key={i} className="italic text-foreground/90">{part.slice(1, -1)}</em>;
@@ -275,23 +275,25 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
 
     case "definition":
       return (
-        <div className="my-6 p-5 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl">
-          <span className="text-[10px] tracking-wider uppercase font-bold text-indigo-600 bg-indigo-100/40 px-2 py-0.5 rounded">Definition</span>
-          <h4 className="text-base font-bold text-slate-900 mt-2 font-sans">{parseInlineText(block.term)}</h4>
+        <div className="my-5 pl-4 border-l-2 border-slate-300">
+          <span className="text-[10px] tracking-wider uppercase font-bold text-slate-400">Definition</span>
+          <h4 className="text-base font-bold text-slate-900 mt-1 font-sans">{parseInlineText(block.term)}</h4>
           <div className="text-[15px] text-slate-700 mt-1.5 leading-relaxed font-serif">{parseMarkdownContent(block.definition)}</div>
         </div>
       );
 
     case "keyterms":
       return (
-        <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 my-6 space-y-2.5">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Key Terms</p>
-          {block.terms.map((t, i) => (
-            <div key={i} className="flex gap-2 text-[14px]">
-              <span className="font-bold text-primary shrink-0">• {t.label}:</span>
-              <span className="text-slate-700 leading-relaxed font-serif">{parseInlineWithBreaks(t.value)}</span>
-            </div>
-          ))}
+        <div className="my-5 space-y-2">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Key Terms</p>
+          <div className="space-y-2">
+            {block.terms.map((t, i) => (
+              <div key={i} className="flex flex-col sm:flex-row sm:gap-3 text-[14px] leading-relaxed">
+                <span className="font-bold text-slate-850 shrink-0 sm:min-w-[120px]">• {t.label}:</span>
+                <span className="text-slate-700 font-serif">{parseInlineWithBreaks(t.value)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       );
 
@@ -311,19 +313,19 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
 
     case "equation":
       return (
-        <div className="bg-violet-50/30 border border-violet-100/60 rounded-2xl p-5 my-6 text-center shadow-sm">
-          <p className="text-xs text-violet-600 font-semibold uppercase tracking-wider mb-2 font-sans">{block.label}</p>
-          <p className="font-mono text-xl font-bold text-violet-950 my-2 tracking-wide bg-white/70 inline-block px-4 py-1.5 rounded-xl border border-violet-100/40">{block.formula}</p>
-          {block.note && <p className="text-xs text-slate-500 font-sans mt-2">{parseInlineText(block.note)}</p>}
+        <div className="my-5 pl-4 border-l-2 border-slate-300">
+          <p className="text-xs text-slate-450 font-semibold uppercase tracking-wider mb-1 font-sans">{block.label}</p>
+          <p className="font-mono text-base font-bold text-slate-900 my-1 bg-slate-50 border border-slate-100/70 inline-block px-3 py-1 rounded">{block.formula}</p>
+          {block.note && <p className="text-xs text-slate-500 font-sans mt-1">{parseInlineText(block.note)}</p>}
         </div>
       );
 
     case "table":
       return (
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm my-6">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm my-5">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-500">
-              <thead className="bg-slate-50/75 border-b border-slate-100 text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
                 <tr>
                   {block.headers.map((h, i) => (
                     <th key={i} className="px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -332,11 +334,11 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+              <tbody className="divide-y divide-slate-150 bg-white text-slate-700">
                 {block.rows.map((row, ri) => (
-                  <tr key={ri} className="hover:bg-slate-50/40 transition-colors">
+                  <tr key={ri} className="hover:bg-slate-50/20 transition-colors">
                     {row.map((cell, ci) => (
-                      <td key={ci} className={`px-5 py-3.5 text-xs leading-relaxed ${ci === 0 ? "font-bold text-slate-900" : "text-slate-600"}`}>
+                      <td key={ci} className={`px-5 py-3 text-xs leading-relaxed ${ci === 0 ? "font-bold text-slate-900" : "text-slate-600"}`}>
                         {parseInlineWithBreaks(cell)}
                       </td>
                     ))}
@@ -350,7 +352,7 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
 
     case "video":
       return (
-        <div className="my-8 rounded-2xl overflow-hidden border border-slate-100 shadow-md">
+        <div className="my-6 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
           <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
             <iframe
               className="absolute inset-0 w-full h-full"
@@ -360,9 +362,9 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
               allowFullScreen
             />
           </div>
-          <div className="bg-slate-50 border-t border-slate-100 px-4 py-3 flex items-center gap-2">
+          <div className="bg-slate-50 border-t border-slate-250 px-4 py-2.5 flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-red-500 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" className="w-3 h-3 fill-white"><path d="M8 5v14l11-7z"/></svg>
+              <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-white"><path d="M8 5v14l11-7z"/></svg>
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-700">{block.title}</p>
@@ -380,46 +382,40 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
 
     case "tip":
       return (
-        <div className="flex gap-3.5 bg-amber-50/40 border border-amber-100/50 rounded-2xl p-5 my-6 shadow-sm">
-          <Lightbulb className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="text-[10px] tracking-wider uppercase font-bold text-amber-700 bg-amber-100/30 px-2 py-0.5 rounded">Exam Tip</span>
-            <div className="text-[14px] text-amber-900 leading-relaxed font-serif mt-1.5">{parseMarkdownContent(block.text)}</div>
-          </div>
+        <div className="my-5 pl-4 border-l-2 border-amber-400">
+          <span className="text-[10px] tracking-wider uppercase font-bold text-amber-600">Exam Tip</span>
+          <div className="text-[14px] text-slate-700 leading-relaxed font-serif mt-1">{parseMarkdownContent(block.text)}</div>
         </div>
       );
 
     case "warning":
       return (
-        <div className="flex gap-3.5 bg-rose-50/40 border border-rose-100/50 rounded-2xl p-5 my-6 shadow-sm">
-          <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="text-[10px] tracking-wider uppercase font-bold text-rose-700 bg-rose-100/30 px-2 py-0.5 rounded">Common Mistake</span>
-            <div className="text-[14px] text-rose-900 leading-relaxed font-serif mt-1.5">{parseMarkdownContent(block.text)}</div>
-          </div>
+        <div className="my-5 pl-4 border-l-2 border-rose-450">
+          <span className="text-[10px] tracking-wider uppercase font-bold text-rose-600">Common Mistake</span>
+          <div className="text-[14px] text-slate-700 leading-relaxed font-serif mt-1">{parseMarkdownContent(block.text)}</div>
         </div>
       );
 
     case "comparison":
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-          <div className="bg-blue-50/30 border border-blue-100/50 rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">{block.left.label}</p>
-            <ul className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-5">
+          <div className="border border-slate-200 rounded-xl p-4 shadow-sm bg-white">
+            <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">{block.left.label}</p>
+            <ul className="space-y-1.5">
               {block.left.items.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-blue-900 leading-relaxed font-serif">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                <li key={i} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed font-serif">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
                   <span>{parseInlineWithBreaks(item)}</span>
                 </li>
               ))}
             </ul>
           </div>
-          <div className="bg-pink-50/30 border border-pink-100/50 rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-bold text-pink-700 mb-2 uppercase tracking-wide">{block.right.label}</p>
-            <ul className="space-y-2">
+          <div className="border border-slate-200 rounded-xl p-4 shadow-sm bg-white">
+            <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">{block.right.label}</p>
+            <ul className="space-y-1.5">
               {block.right.items.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-pink-900 leading-relaxed font-serif">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-pink-400 shrink-0" />
+                <li key={i} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed font-serif">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
                   <span>{parseInlineWithBreaks(item)}</span>
                 </li>
               ))}
@@ -429,15 +425,8 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
       );
 
     case "highlight": {
-      const colorMap = {
-        pink: "bg-primary/5 border border-primary/10 text-slate-800",
-        blue: "bg-blue-50/30 border border-blue-100/50 text-blue-950",
-        green: "bg-emerald-50/30 border border-emerald-100/50 text-emerald-950",
-        yellow: "bg-amber-50/30 border border-amber-100/50 text-amber-950",
-      };
-      const cls = colorMap[block.color ?? "pink"];
       return (
-        <div className={`rounded-2xl px-5 py-4 my-6 text-[14px] leading-relaxed font-serif ${cls}`}>
+        <div className="border-l-2 border-slate-300 pl-4 my-5 text-[14px] leading-relaxed font-serif text-slate-700">
           {parseMarkdownContent(block.text)}
         </div>
       );

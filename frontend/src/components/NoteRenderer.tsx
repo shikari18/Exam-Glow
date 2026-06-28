@@ -363,6 +363,7 @@ function BlockRenderer({ block }: { block: NoteBlock }) {
         blue: "bg-blue-50/30 border border-blue-100/50 text-blue-950",
         green: "bg-emerald-50/30 border border-emerald-100/50 text-emerald-950",
         yellow: "bg-amber-50/30 border border-amber-100/50 text-amber-950",
+        red: "bg-rose-50/30 border border-rose-100/50 text-rose-950",
       };
       const cls = colorMap[block.color ?? "pink"];
       return (

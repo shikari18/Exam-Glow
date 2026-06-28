@@ -16,7 +16,7 @@ export type NoteBlock =
   | { kind: "tip"; text: string }
   | { kind: "warning"; text: string }
   | { kind: "comparison"; left: { label: string; items: string[] }; right: { label: string; items: string[] } }
-  | { kind: "highlight"; text: string; color?: "pink" | "blue" | "green" | "yellow" };
+  | { kind: "highlight"; text: string; color?: "pink" | "blue" | "green" | "yellow" | "red" };
 
 export type BulletItem = {
   text: string;
